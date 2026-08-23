@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ScanLine from "@/components/ScanLine";
+import ShareCardActions from "@/components/ShareCardActions";
 import SourcePanel from "@/components/SourcePanel";
 import VerdictCard from "@/components/VerdictCard";
 import { ClaimNotFoundState } from "@/components/States";
@@ -130,9 +131,11 @@ export default function ResultPage() {
         </p>
       </section>
 
-      <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-        <button type="button" onClick={handleShare} className="btn-primary sm:flex-1">
-          {copied ? "Link copied" : "Share this check ↗"}
+      <ShareCardActions record={record} />
+
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+        <button type="button" onClick={handleShare} className="rounded-md border border-line px-4 py-3.5 text-center font-display text-sm font-semibold tracking-wide text-ink transition-colors hover:border-signal/40 sm:flex-1">
+          {copied ? "Link copied" : "Copy link"}
         </button>
         <Link
           href="/"
