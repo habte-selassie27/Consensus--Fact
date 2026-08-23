@@ -36,6 +36,17 @@ PIPELINE_FAILURE_EXPLANATION = (
 )
 INVALID_VERDICT_EXPLANATION = "The model returned an unrecognized verdict value."
 
+EXTRACT_URLS_PROMPT = """You are a research assistant. Below is the text content of a web page.
+
+PAGE CONTENT:
+{content}
+
+Extract exactly {num} URLs that appear in or are referenced by this page content which would be good independent corroborating sources about the page's subject matter. Only use https:// URLs. Prefer official institutions, encyclopedias, and established news outlets.
+
+Respond ONLY with a valid JSON array of URL strings, no markdown, no preamble:
+["https://example.com/a", "https://example.com/b"]
+"""
+
 
 @allow_storage
 @dataclass
@@ -68,3 +79,72 @@ class FactChecker(gl.Contract):
     def _validate_source_url(self, source_url: str) -> None:
         if not isinstance(source_url, str) or not source_url.startswith("https://"):
             raise gl.UserError("Source URL must start with https://")
+
+    def _run_check_pipeline(self, claim: str, source_url: str) -> str:
+        """Non-deterministic pipeline: fetch primary, extract corroborating
+        URLs via LLM, fetch them, evaluate via LLM. Returns a JSON string
+        comparable across validators."""
+        try:
+            primary_content = gl.get_webpage(source_url, mode="text")
+        except Exception:
+            return json.dumps(
+                {
+                    "status": "unreachable",
+                    "sources": [source_url],
+                    "raw_result": None,
+                    "failed_count": 0,
+                }
+            )
+
+        corroborating_urls = self._extract_corroborating_sources(primary_content)
+
+        contents = [str(primary_content)]
+        fetched_urls = [source_url]
+        failed_count = 0
+
+        for url in corroborating_urls[:NUM_CORROBORATING_SOURCES]:
+            try:
+                contents.append(str(gl.get_webpage(url, mode="text")))
+                fetched_urls.append(url)
+            except Exception:
+                failed_count += 1
+
+        while len(contents) < 3:
+            contents.append("")
+
+        prompt = self._build_evaluation_prompt(claim, contents, fetched_urls)
+
+        raw_result = None
+        for attempt in range(MAX_LLM_ATTEMPTS):
+            response = gl.nondet.exec_prompt(prompt, response_format="json")
+            raw_result = _clean_json(response)
+            if isinstance(raw_result, dict):
+                break
+
+        return json.dumps(
+            {
+                "status": "ok",
+                "sources": fetched_urls,
+                "raw_result": raw_result if isinstance(raw_result, dict) else None,
+                "failed_count": failed_count,
+            }
+        )
+
+    def _extract_corroborating_sources(self, primary_content: str) -> list:
+        """Use the LLM to pull up to 2 corroborating URLs from page content."""
+        prompt = EXTRACT_URLS_PROMPT.format(
+            content=str(primary_content)[:SOURCE_CONTENT_SLICE],
+            num=NUM_CORROBORATING_SOURCES,
+        )
+        response = gl.nondet.exec_prompt(prompt, response_format="json")
+        parsed = _clean_json(response)
+
+        if not isinstance(parsed, list):
+            return []
+
+        urls = []
+        for item in parsed:
+            if isinstance(item, str) and item.startswith("https://"):
+                if item not in urls and item != "":
+                    urls.append(item)
+        return urls[:NUM_CORROBORATING_SOURCES]
