@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env*.local
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+typescript/.next/
+next-env.d.ts
