@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { CATEGORIES, inferCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
+import { getRecentChecks } from "@/lib/genlayer";
+import { verdictBadgeClass } from "@/components/verdictStyles";
 
 interface ClaimFormProps {
   onSubmit: (claim: string, url: string, category: Category) => void;
@@ -30,6 +35,21 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
     claim.length <= MAX_CLAIM_LENGTH;
   const urlValid = url.startsWith("https://") && url.length > "https://".length;
   const formValid = claimValid && urlValid;
+
+  const { data: recent } = useQuery({
+    queryKey: ["recent-claim-autocomplete"],
+    queryFn: () => getRecentChecks(50),
+    enabled: claim.trim().length >= 6,
+    retry: false,
+  });
+
+  const suggestions = useMemo(() => {
+    const q = claim.trim().toLowerCase();
+    if (q.length < 6 || !recent) return [];
+    return recent
+      .filter((r) => r.claim.toLowerCase().includes(q) && r.claim.toLowerCase() !== q)
+      .slice(0, 3);
+  }, [claim, recent]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -71,6 +91,40 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             {claim.length}/{MAX_CLAIM_LENGTH}
           </span>
         </div>
+
+        <AnimatePresence>
+          {suggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="mt-3 rounded-lg border border-pending/30 bg-pending/5 p-3"
+            >
+              <p className="mb-2 font-mono text-[0.65rem] font-semibold tracking-wide text-pending">
+                Did someone already check this?
+              </p>
+              <ul className="space-y-2">
+                {suggestions.map((r) => (
+                  <li key={r.id}>
+                    <Link
+                      href={`/result/${r.id}`}
+                      className="flex items-center gap-2 rounded-md border border-line bg-void px-3 py-2 transition-colors hover:border-signal/40"
+                    >
+                      <span
+                        className={`shrink-0 rounded border px-1.5 py-0.5 font-display text-[0.55rem] font-bold tracking-widest ${verdictBadgeClass(r.verdict)}`}
+                      >
+                        {r.verdict}
+                      </span>
+                      <span className="flex-1 truncate font-mono text-xs text-ink-dim">
+                        &ldquo;{r.claim}&rdquo;
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="mb-6">

@@ -20,6 +20,7 @@ const FILTERS: VerdictFilter[] = ["ALL", ...VERDICTS];
 export default function HistoryPage() {
   const [filter, setFilter] = useState<VerdictFilter>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<Category | "ALL">("ALL");
+  const [query, setQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("timestamp");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -32,10 +33,14 @@ export default function HistoryPage() {
   const records = data ?? [];
 
   const visibleRecords = useMemo(() => {
+    const lowered = query.trim().toLowerCase();
+    const byQuery = lowered
+      ? records.filter((r) => r.claim.toLowerCase().includes(lowered))
+      : records;
     const byVerdict =
       filter === "ALL"
-        ? records
-        : records.filter((record) => record.verdict === filter);
+        ? byQuery
+        : byQuery.filter((record) => record.verdict === filter);
     const byCategory =
       categoryFilter === "ALL"
         ? byVerdict
@@ -46,7 +51,7 @@ export default function HistoryPage() {
       const diff = a[sortField] - b[sortField];
       return sortDir === "asc" ? diff : -diff;
     });
-  }, [records, filter, categoryFilter, sortField, sortDir]);
+  }, [records, query, filter, categoryFilter, sortField, sortDir]);
 
   function handleSortChange(field: SortField) {
     if (field === sortField) {
@@ -68,6 +73,17 @@ export default function HistoryPage() {
 
       {!isError && records.length > 0 && (
         <>
+          <div className="mt-6">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search claims…"
+              aria-label="Search claims"
+              className="w-full rounded-lg border border-line bg-void px-4 py-2.5 font-mono text-sm text-ink placeholder:text-ink-ghost focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+            />
+          </div>
+
           <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Filter by verdict">
             {FILTERS.map((option) => (
               <button
