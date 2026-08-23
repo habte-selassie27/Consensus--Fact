@@ -148,3 +148,39 @@ class FactChecker(gl.Contract):
                 if item not in urls and item != "":
                     urls.append(item)
         return urls[:NUM_CORROBORATING_SOURCES]
+
+    def _build_evaluation_prompt(
+        self, claim: str, contents: list, source_urls: list
+    ) -> str:
+        url1 = source_urls[0] if len(source_urls) > 0 else "unavailable"
+        url2 = source_urls[1] if len(source_urls) > 1 else "unavailable"
+        url3 = source_urls[2] if len(source_urls) > 2 else "unavailable"
+
+        return f"""You are a professional fact-checker. Evaluate the following claim against the provided source content.
+
+CLAIM: {claim}
+
+SOURCE 1 ({url1}):
+{contents[0][:SOURCE_CONTENT_SLICE]}
+
+SOURCE 2 ({url2}):
+{contents[1][:SOURCE_CONTENT_SLICE]}
+
+SOURCE 3 ({url3}):
+{contents[2][:SOURCE_CONTENT_SLICE]}
+
+Based on ALL THREE sources, respond ONLY with a valid JSON object using exactly this structure:
+{{
+  "verdict": "TRUE" | "FALSE" | "MISLEADING" | "UNVERIFIABLE",
+  "confidence": <integer 0-100>,
+  "explanation": "<2-3 sentences explaining the verdict, citing which sources support it>"
+}}
+
+Rules:
+- TRUE: All credible sources confirm the claim
+- FALSE: Sources directly contradict the claim with evidence
+- MISLEADING: Claim is partially true but omits critical context
+- UNVERIFIABLE: Sources do not contain sufficient information
+- confidence reflects source quality and agreement level
+- explanation must reference specific source content
+- Return ONLY the JSON, no markdown, no preamble"""
