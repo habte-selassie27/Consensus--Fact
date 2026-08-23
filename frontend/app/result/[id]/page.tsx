@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
 import ChallengePanel from "@/components/ChallengePanel";
 import ConfidenceRing from "@/components/ConfidenceRing";
+import ExportReportButton from "@/components/ExportReportButton";
 import ScanLine from "@/components/ScanLine";
 import ShareCardActions from "@/components/ShareCardActions";
 import SourcePanel from "@/components/SourcePanel";
@@ -137,6 +138,7 @@ export default function ResultPage() {
       <ChallengePanel original={record} />
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+        <ExportReportButton record={record} />
         <button type="button" onClick={handleShare} className="rounded-md border border-line px-4 py-3.5 text-center font-display text-sm font-semibold tracking-wide text-ink transition-colors hover:border-signal/40 sm:flex-1">
           {copied ? "Link copied" : "Copy link"}
         </button>
