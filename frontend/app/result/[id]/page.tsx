@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
+import CategoryBadge from "@/components/CategoryBadge";
 import ChallengePanel from "@/components/ChallengePanel";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ExportReportButton from "@/components/ExportReportButton";
@@ -13,6 +14,7 @@ import ShareCardActions from "@/components/ShareCardActions";
 import SourcePanel from "@/components/SourcePanel";
 import VerdictCard from "@/components/VerdictCard";
 import { ClaimNotFoundState } from "@/components/States";
+import { getStoredCategory } from "@/lib/categories";
 import { getCheck } from "@/lib/genlayer";
 
 function formatTimestamp(timestamp: number): string {
@@ -78,7 +80,10 @@ export default function ResultPage() {
     >
       <ScanLine />
 
-      <p className="pt-10 font-mono text-sm text-ink-dim">&ldquo;{record.claim}&rdquo;</p>
+      <div className="flex items-start justify-between gap-4 pt-10">
+        <p className="font-mono text-sm text-ink-dim flex-1">&ldquo;{record.claim}&rdquo;</p>
+        <CategoryBadge category={getStoredCategory(record.id, record.claim) ?? "Other"} />
+      </div>
 
       <section
         aria-label="Verdict"

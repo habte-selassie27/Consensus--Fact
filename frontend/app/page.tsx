@@ -7,6 +7,8 @@ import BatchClaimForm from "@/components/BatchClaimForm";
 import ClaimForm from "@/components/ClaimForm";
 import RecentChecksTicker from "@/components/RecentChecksTicker";
 import ValidatorProgress from "@/components/ValidatorProgress";
+import { saveCategory } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
 import { submitClaim } from "@/lib/genlayer";
 import type { TxStatus } from "@/lib/types";
 
@@ -17,13 +19,14 @@ export default function HomePage() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleSubmit(claim: string, url: string) {
+  async function handleSubmit(claim: string, url: string, category: Category) {
     setStatus("pending");
     setTxHash(null);
     setErrorMessage(null);
 
     try {
       const result = await submitClaim(claim, url);
+      saveCategory(result.checkId, category);
       setTxHash(result.txHash);
       setStatus("confirming");
       await new Promise((resolve) => setTimeout(resolve, 700));

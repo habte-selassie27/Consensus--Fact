@@ -7,6 +7,8 @@ import HistoryTable, {
   type SortField,
 } from "@/components/HistoryTable";
 import { EmptyHistoryState } from "@/components/States";
+import { CATEGORIES, getStoredCategory } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
 import { getRecentChecks } from "@/lib/genlayer";
 import { VERDICTS, type Verdict } from "@/lib/types";
 
@@ -16,6 +18,7 @@ const FILTERS: VerdictFilter[] = ["ALL", ...VERDICTS];
 
 export default function HistoryPage() {
   const [filter, setFilter] = useState<VerdictFilter>("ALL");
+  const [categoryFilter, setCategoryFilter] = useState<Category | "ALL">("ALL");
   const [sortField, setSortField] = useState<SortField>("timestamp");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -28,15 +31,21 @@ export default function HistoryPage() {
   const records = data ?? [];
 
   const visibleRecords = useMemo(() => {
-    const filtered =
+    const byVerdict =
       filter === "ALL"
         ? records
         : records.filter((record) => record.verdict === filter);
-    return [...filtered].sort((a, b) => {
+    const byCategory =
+      categoryFilter === "ALL"
+        ? byVerdict
+        : byVerdict.filter(
+            (r) => (getStoredCategory(r.id, r.claim) ?? "Other") === categoryFilter
+          );
+    return [...byCategory].sort((a, b) => {
       const diff = a[sortField] - b[sortField];
       return sortDir === "asc" ? diff : -diff;
     });
-  }, [records, filter, sortField, sortDir]);
+  }, [records, filter, categoryFilter, sortField, sortDir]);
 
   function handleSortChange(field: SortField) {
     if (field === sortField) {
@@ -72,6 +81,24 @@ export default function HistoryPage() {
                 }`}
               >
                 {option}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+            {(["ALL", ...CATEGORIES] as const).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter(cat as Category | "ALL")}
+                aria-pressed={categoryFilter === cat}
+                className={`rounded-sm border px-3 py-1.5 font-mono text-xs tracking-wide transition-colors ${
+                  categoryFilter === cat
+                    ? "border-pending bg-pending/10 text-pending"
+                    : "border-line text-ink-dim hover:border-line/60 hover:text-ink"
+                }`}
+              >
+                {cat}
               </button>
             ))}
           </div>

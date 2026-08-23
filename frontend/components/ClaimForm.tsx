@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CATEGORIES, inferCategory } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
 
 interface ClaimFormProps {
-  onSubmit: (claim: string, url: string) => void;
+  onSubmit: (claim: string, url: string, category: Category) => void;
   isLoading: boolean;
 }
 
@@ -13,7 +15,15 @@ const MAX_CLAIM_LENGTH = 500;
 export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
   const [claim, setClaim] = useState("");
   const [url, setUrl] = useState("");
+  const [category, setCategory] = useState<Category>("Other");
   const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (claim.trim().length >= 8) {
+      const inferred = inferCategory(claim);
+      if (category === "Other" && inferred !== "Other") setCategory(inferred);
+    }
+  }, [claim, category]);
 
   const claimValid =
     claim.trim().length >= MIN_CLAIM_LENGTH &&
@@ -25,7 +35,7 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
     event.preventDefault();
     setTouched(true);
     if (!formValid || isLoading) return;
-    onSubmit(claim.trim(), url.trim());
+    onSubmit(claim.trim(), url.trim(), category);
   }
 
   return (
@@ -82,6 +92,27 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             Must start with https://
           </p>
         )}
+      </div>
+
+      <div className="mb-6">
+        <label htmlFor="category" className="label mb-2 block">
+          Category
+        </label>
+        <select
+          id="category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as Category)}
+          className="w-full rounded-[10px] border border-line bg-void px-3 py-3.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 font-mono text-[0.65rem] text-ink-ghost">
+          Auto-suggested from claim text — change if needed.
+        </p>
       </div>
 
       <button
