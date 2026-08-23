@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import BatchClaimForm from "@/components/BatchClaimForm";
 import ClaimForm from "@/components/ClaimForm";
+import ClaimOfTheDay from "@/components/ClaimOfTheDay";
 import RecentChecksTicker from "@/components/RecentChecksTicker";
 import ValidatorProgress from "@/components/ValidatorProgress";
 import { saveCategory } from "@/lib/categories";
@@ -74,6 +75,8 @@ export default function HomePage() {
       </section>
 
       {/* Claim form — single / batch tabs */}
+      <ClaimOfTheDay />
+
       <motion.section
         aria-label="Submit a claim"
         initial={{ opacity: 0, y: 24 }}
