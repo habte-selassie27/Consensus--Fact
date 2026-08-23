@@ -92,8 +92,16 @@ export default function Home() {
             </div>
             <span className="h-3 w-px bg-line" />
             <div className="flex items-center gap-2 font-mono text-ink-dim">
-              <span className="font-semibold text-signal">100%</span>
-              <span>on-chain</span>
+              <span className="font-semibold text-signal">
+                {stats?.total_checks
+                  ? `${Math.round(
+                      ((stats.verdicts_by_type?.TRUE ?? 0) /
+                        stats.total_checks) *
+                        100
+                    )}%`
+                  : "—"}
+              </span>
+              <span>consensus rate</span>
             </div>
           </div>
         </motion.div>

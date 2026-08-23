@@ -1,26 +1,46 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Menu, X } from "lucide-react";
+import { Shield } from "lucide-react";
 
 const NAV_LINKS = [
+  { to: "/", label: "Home" },
   { to: "/stats", label: "Stats" },
-  { to: "/leaderboard", label: "Top" },
   { to: "/history", label: "History" },
 ] as const;
 
 export default function Navbar() {
   const { pathname } = useLocation();
   const [mounted, setMounted] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [wallet, setWallet] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   if (mounted && pathname?.startsWith("/embed")) return null;
 
   function isActive(path: string) {
+    if (path === "/") return pathname === "/";
     return pathname === path || pathname.startsWith(path + "/");
+  }
+
+  async function connectWallet() {
+    try {
+      if (typeof window !== "undefined" && window.ethereum) {
+        const accounts = (await window.ethereum.request({
+          method: "eth_requestAccounts",
+        })) as string[];
+        if (accounts[0]) {
+          setWallet(accounts[0]);
+        }
+      } else {
+        alert("No Web3 wallet detected. Install MetaMask or another GenLayer-compatible wallet.");
+      }
+    } catch {
+      // user rejected or error
+    }
+  }
+
+  function truncateAddress(addr: string) {
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   }
 
   return (
@@ -37,8 +57,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Desktop nav — always visible on md+ */}
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Nav links — always visible */}
+        <nav className="flex items-center gap-1">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.to}
@@ -64,6 +84,7 @@ export default function Navbar() {
 
           <span className="mx-1 h-3 w-px bg-ink-ghost/40" />
 
+          {/* GenLayer pill */}
           <a
             href="https://genlayer.com"
             target="_blank"
@@ -72,31 +93,24 @@ export default function Navbar() {
           >
             GenLayer ↗
           </a>
-        </nav>
 
-        {/* Mobile — compact nav row, no hamburger */}
-        <nav className="flex items-center gap-1 md:hidden">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                isActive(link.to)
-                  ? "text-ink bg-surface-2"
-                  : "text-ink-dim hover:text-ink"
-              }`}
+          {/* Wallet connect */}
+          {wallet ? (
+            <div className="ml-2 flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-signal" />
+              <span className="font-mono text-xs text-ink-dim">
+                {truncateAddress(wallet)}
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={connectWallet}
+              className="ml-2 rounded-lg border border-signal/40 bg-signal/5 px-3 py-1.5 font-mono text-xs font-medium text-signal transition-all hover:bg-signal/10 hover:border-signal/60"
             >
-              {link.label}
-            </Link>
-          ))}
-          <a
-            href="https://docs.genlayer.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-md px-2.5 py-1 text-xs font-medium text-ink-dim hover:text-ink"
-          >
-            Docs
-          </a>
+              Connect
+            </button>
+          )}
         </nav>
       </div>
     </header>

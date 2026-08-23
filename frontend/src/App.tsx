@@ -51,6 +51,17 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          <footer className="border-t border-line/40 py-6 text-center text-xs text-ink-dim">
+            Built on{" "}
+            <a
+              href="https://genlayer.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-signal hover:underline"
+            >
+              GenLayer
+            </a>
+          </footer>
         </div>
       </BrowserRouter>
     </QueryClientProvider>
