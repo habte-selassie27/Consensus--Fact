@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import BatchClaimForm from "@/components/BatchClaimForm";
 import ClaimForm from "@/components/ClaimForm";
 import RecentChecksTicker from "@/components/RecentChecksTicker";
 import ValidatorProgress from "@/components/ValidatorProgress";
@@ -11,6 +12,7 @@ import type { TxStatus } from "@/lib/types";
 
 export default function HomePage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"single" | "batch">("single");
   const [status, setStatus] = useState<TxStatus>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -68,22 +70,59 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Claim form */}
+      {/* Claim form — single / batch tabs */}
       <motion.section
         aria-label="Submit a claim"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
       >
-        <ClaimForm
-          onSubmit={handleSubmit}
-          isLoading={status === "pending" || status === "confirming"}
-        />
-        <ValidatorProgress
-          status={status}
-          txHash={txHash}
-          errorMessage={errorMessage}
-        />
+        <div
+          role="tablist"
+          aria-label="Claim submission mode"
+          className="mb-4 inline-flex rounded-lg border border-line bg-surface p-1"
+        >
+          <button
+            role="tab"
+            aria-selected={mode === "single"}
+            onClick={() => setMode("single")}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              mode === "single"
+                ? "bg-signal text-void"
+                : "text-ink-dim hover:text-ink"
+            }`}
+          >
+            Single
+          </button>
+          <button
+            role="tab"
+            aria-selected={mode === "batch"}
+            onClick={() => setMode("batch")}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+              mode === "batch"
+                ? "bg-signal text-void"
+                : "text-ink-dim hover:text-ink"
+            }`}
+          >
+            Batch check
+          </button>
+        </div>
+
+        {mode === "single" ? (
+          <>
+            <ClaimForm
+              onSubmit={handleSubmit}
+              isLoading={status === "pending" || status === "confirming"}
+            />
+            <ValidatorProgress
+              status={status}
+              txHash={txHash}
+              errorMessage={errorMessage}
+            />
+          </>
+        ) : (
+          <BatchClaimForm onSubmitAll={() => {}} />
+        )}
       </motion.section>
 
       {/* Recent checks */}
