@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { Link2, CheckCircle2, XCircle, Shield, Zap, Globe } from "lucide-react";
+import {
+  Link2,
+  CheckCircle2,
+  XCircle,
+  Shield,
+  Zap,
+  Globe,
+  Brain,
+} from "lucide-react";
 import { CATEGORIES, inferCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
 import { getRecentChecks } from "@/lib/genlayer";
@@ -46,8 +54,10 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
   const claimValid =
     claim.trim().length >= MIN_CLAIM_LENGTH &&
     claim.length <= MAX_CLAIM_LENGTH;
-  const urlValid = url.startsWith("https://") && url.length > "https://".length;
+  const urlValid =
+    url === "" || (url.startsWith("https://") && url.length > "https://".length);
   const formValid = claimValid && urlValid;
+  const mode = url.trim() === "" ? "KNOWLEDGE_BASED" : "SOURCE_VERIFIED";
 
   const { data: recent } = useQuery({
     queryKey: ["recent-claim-autocomplete"],
@@ -93,7 +103,7 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
           maxLength={MAX_CLAIM_LENGTH}
           onChange={(event) => setClaim(event.target.value)}
           onBlur={() => setTouched(true)}
-          placeholder='e.g. "The Great Wall of China is visible from space with the naked eye."'
+          placeholder='e.g. "The James Webb Space Telescope launched in 2021"'
           aria-invalid={touched && !claimValid}
           required
         />
@@ -122,7 +132,7 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="mt-3 rounded-lg border border-pending/30 bg-pending/5 p-3"
+              className="mt-3 rounded-lg border border-pending/30 bg-pending-dim p-3"
             >
               <p className="mb-2 font-mono text-[0.65rem] font-semibold tracking-wide text-pending">
                 Did someone already check this?
@@ -151,15 +161,35 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         </AnimatePresence>
       </div>
 
+      {/* Verification mode indicator */}
       <div className="mb-5">
-        <label htmlFor="source-url" className="label mb-2.5 block">
-          Source URL
-        </label>
+        <div className="mb-2.5 flex items-center justify-between">
+          <label htmlFor="source-url" className="label">
+            Source URL <span className="normal-case text-ink-ghost">(optional)</span>
+          </label>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[0.6rem] font-semibold tracking-wide ${
+              mode === "SOURCE_VERIFIED"
+                ? "border-signal-border bg-signal-dim text-signal"
+                : "border-pending/30 bg-pending-dim text-pending"
+            }`}
+          >
+            {mode === "SOURCE_VERIFIED" ? (
+              <>
+                <Globe size={10} /> Source-verified
+              </>
+            ) : (
+              <>
+                <Brain size={10} /> Knowledge-based
+              </>
+            )}
+          </span>
+        </div>
         <div className="relative">
           <Link2
             size={16}
             className={`absolute left-4 top-1/2 -translate-y-1/2 ${
-              touched && urlValid ? "text-signal" : "text-ink-ghost"
+              touched && urlValid && url ? "text-signal" : "text-ink-ghost"
             } transition-colors`}
           />
           <input
@@ -168,9 +198,8 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             onBlur={() => setTouched(true)}
-            placeholder="https://..."
+            placeholder="https://... — leave empty for knowledge-based check"
             aria-invalid={touched && !urlValid}
-            required
             className="!pl-10 !pr-10"
           />
           {touched && url.length > 0 && (
@@ -185,9 +214,14 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         </div>
         {touched && !urlValid && url.length > 0 && (
           <p className="mt-2 text-xs text-danger">
-            Must start with https://
+            Must start with https:// — or leave empty to skip
           </p>
         )}
+        <p className="mt-2 text-xs leading-relaxed text-ink-ghost">
+          {mode === "SOURCE_VERIFIED"
+            ? "The contract fetches this URL live and cross-references corroborating sources."
+            : "No source: the AI evaluates from its own knowledge. Confidence is capped and the verdict is labeled knowledge-based."}
+        </p>
       </div>
 
       <div className="mb-6">
@@ -210,8 +244,10 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-void/30 border-t-void" />
             Verifying on-chain...
           </span>
+        ) : mode === "SOURCE_VERIFIED" ? (
+          "Verify with source →"
         ) : (
-          "Check this claim →"
+          "Verify from knowledge →"
         )}
       </button>
 
@@ -227,7 +263,7 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
           <Zap size={10} /> ~30s
         </span>
         <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
-          <Globe size={10} /> 3 sources
+          <Globe size={10} /> {mode === "SOURCE_VERIFIED" ? "3 sources" : "AI knowledge"}
         </span>
       </div>
     </form>
