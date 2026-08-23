@@ -12,6 +12,30 @@ from dataclasses import dataclass
 
 from genlayer import *
 
+MAX_CLAIM_LENGTH = 500
+MAX_RECENT_LIMIT = 50
+DEFAULT_RECENT_LIMIT = 10
+SOURCE_CONTENT_SLICE = 2000
+NUM_CORROBORATING_SOURCES = 2
+MAX_LLM_ATTEMPTS = 2
+
+VERDICT_TRUE = "TRUE"
+VERDICT_FALSE = "FALSE"
+VERDICT_MISLEADING = "MISLEADING"
+VERDICT_UNVERIFIABLE = "UNVERIFIABLE"
+VALID_VERDICTS = (
+    VERDICT_TRUE,
+    VERDICT_FALSE,
+    VERDICT_MISLEADING,
+    VERDICT_UNVERIFIABLE,
+)
+
+UNREACHABLE_EXPLANATION = "Primary source could not be fetched."
+PIPELINE_FAILURE_EXPLANATION = (
+    "The fact-check pipeline failed to produce a structured verdict."
+)
+INVALID_VERDICT_EXPLANATION = "The model returned an unrecognized verdict value."
+
 
 @allow_storage
 @dataclass
@@ -34,3 +58,13 @@ class FactChecker(gl.Contract):
 
     def __init__(self):
         self.total_checks = 0
+
+    def _validate_claim(self, claim: str) -> None:
+        if claim is None or len(claim.strip()) == 0:
+            raise gl.UserError("Claim must be non-empty")
+        if len(claim) > MAX_CLAIM_LENGTH:
+            raise gl.UserError("Claim must be 500 characters or fewer")
+
+    def _validate_source_url(self, source_url: str) -> None:
+        if not isinstance(source_url, str) or not source_url.startswith("https://"):
+            raise gl.UserError("Source URL must start with https://")
