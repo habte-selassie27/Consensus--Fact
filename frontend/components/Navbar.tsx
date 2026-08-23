@@ -1,12 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Shield } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/embed")) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (mounted && pathname?.startsWith("/embed")) return null;
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-void/95 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-page items-center justify-between px-5">
