@@ -2,7 +2,7 @@
   "name": "truthlock",
   "description": "TruthLock - On-Chain Fact Checker (GenLayer Intelligent Contract)",
   "entrypoint": "fact_checker.py",
-  "network": "studio",
+  "network": "studionet",
   "rpc": "${GENLAYER_RPC}",
   "deploy": {
     "command": "genlayer deploy contract/fact_checker.py --network studio",
