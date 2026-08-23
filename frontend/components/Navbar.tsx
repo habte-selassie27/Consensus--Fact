@@ -3,7 +3,7 @@ import { Shield } from "lucide-react";
 
 export default function Navbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-void/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-line bg-void/95 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-page items-center justify-between px-5">
         <Link href="/" className="flex items-center gap-2">
           <Shield size={18} className="text-signal" strokeWidth={2.5} />
