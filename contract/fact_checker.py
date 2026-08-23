@@ -272,3 +272,104 @@ Rules:
 - confidence reflects source quality and agreement level
 - explanation must reference specific source content
 - Return ONLY the JSON, no markdown, no preamble"""
+
+    def _resolve_outcome(self, parsed, fallback_source_url: str):
+        """Deterministic post-processing of the pipeline output."""
+        if not isinstance(parsed, dict):
+            return [fallback_source_url], VERDICT_UNVERIFIABLE, 0, PIPELINE_FAILURE_EXPLANATION
+
+        sources = [fallback_source_url]
+        raw_sources = parsed.get("sources")
+        if isinstance(raw_sources, list):
+            sources = []
+            for item in raw_sources:
+                if isinstance(item, str) and item.startswith("https://"):
+                    sources.append(item)
+            if fallback_source_url not in sources:
+                sources.insert(0, fallback_source_url)
+
+        if parsed.get("status") != "ok":
+            return sources, VERDICT_UNVERIFIABLE, 0, UNREACHABLE_EXPLANATION
+
+        raw_result = parsed.get("raw_result")
+        if not isinstance(raw_result, dict):
+            return sources, VERDICT_UNVERIFIABLE, 0, PIPELINE_FAILURE_EXPLANATION
+
+        verdict = raw_result.get("verdict")
+        confidence = self._coerce_confidence(raw_result.get("confidence"))
+        explanation = raw_result.get("explanation")
+
+        if not isinstance(verdict, str) or verdict not in VALID_VERDICTS:
+            return sources, VERDICT_UNVERIFIABLE, 0, INVALID_VERDICT_EXPLANATION
+
+        if not isinstance(explanation, str) or len(explanation.strip()) == 0:
+            explanation = "No explanation was provided by the model."
+
+        failed_count = parsed.get("failed_count", 0)
+        if isinstance(failed_count, int) and failed_count > 0:
+            explanation = (
+                f"Note: {failed_count} corroborating source(s) could not be "
+                f"fetched and were excluded. {explanation}"
+            )
+
+        return sources, verdict, confidence, explanation
+
+    @staticmethod
+    def _coerce_confidence(value) -> int:
+        try:
+            confidence = int(round(float(str(value).strip())))
+        except (TypeError, ValueError):
+            return 0
+        if confidence < 0:
+            return 0
+        if confidence > 100:
+            return 100
+        return confidence
+
+    def _record_to_dict(self, record: FactCheckRecord) -> dict:
+        return {
+            "id": record.id,
+            "claim": record.claim,
+            "source_url": record.source_url,
+            "verdict": record.verdict,
+            "confidence": record.confidence,
+            "explanation": record.explanation,
+            "sources_checked": [u for u in record.sources_checked],
+            "timestamp": record.timestamp,
+            "submitter": record.submitter,
+        }
+
+    def _current_timestamp(self) -> int:
+        try:
+            return int(gl.block.timestamp)
+        except Exception:
+            return int(gl.block.number)
+
+    def _store_record(
+        self,
+        check_id: str,
+        claim: str,
+        source_url: str,
+        verdict: str,
+        confidence: int,
+        explanation: str,
+        sources: list,
+    ) -> None:
+        record = FactCheckRecord(
+            id=check_id,
+            claim=claim,
+            source_url=source_url,
+            verdict=verdict,
+            confidence=confidence,
+            explanation=explanation,
+            sources_checked=DynArray[str](),
+            timestamp=self._current_timestamp(),
+            submitter=str(gl.message.sender_address),
+        )
+        for url in sources:
+            record.sources_checked.append(url)
+
+        self.checks[check_id] = record
+        self.total_checks += 1
+        current = self.verdicts_by_type[verdict] if verdict in self.verdicts_by_type else 0
+        self.verdicts_by_type[verdict] = current + 1
