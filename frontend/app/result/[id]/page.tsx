@@ -147,6 +147,12 @@ export default function ResultPage() {
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row">
         <ExportReportButton record={record} />
+        <Link
+          href={`/embed/${record.id}`}
+          className="rounded-md border border-line px-4 py-3.5 text-center font-display text-sm font-semibold tracking-wide text-ink transition-colors hover:border-signal/40 sm:flex-1"
+        >
+          Embed
+        </Link>
         <button type="button" onClick={handleShare} className="rounded-md border border-line px-4 py-3.5 text-center font-display text-sm font-semibold tracking-wide text-ink transition-colors hover:border-signal/40 sm:flex-1">
           {copied ? "Link copied" : "Copy link"}
         </button>
