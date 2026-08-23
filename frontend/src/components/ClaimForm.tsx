@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { Link2, CheckCircle2, XCircle, Shield, Zap, Globe } from "lucide-react";
 import { CATEGORIES, inferCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
 import { getRecentChecks } from "@/lib/genlayer";
 import { verdictBadgeClass } from "@/components/verdictStyles";
+import CustomSelect from "@/components/CustomSelect";
 
 interface ClaimFormProps {
   onSubmit: (claim: string, url: string, category: Category) => void;
@@ -14,6 +16,19 @@ interface ClaimFormProps {
 
 const MIN_CLAIM_LENGTH = 10;
 const MAX_CLAIM_LENGTH = 500;
+
+const CATEGORY_OPTIONS = CATEGORIES.map((c) => {
+  const icons: Record<string, string> = {
+    Science: "🔬",
+    Health: "💊",
+    Finance: "💰",
+    Politics: "🏛️",
+    History: "📚",
+    Tech: "💻",
+    Other: "⚙️",
+  };
+  return { value: c, label: c, icon: icons[c] };
+});
 
 export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
   const [claim, setClaim] = useState("");
@@ -56,10 +71,19 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
     onSubmit(claim.trim(), url.trim(), category);
   }
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      if (formValid && !isLoading) {
+        onSubmit(claim.trim(), url.trim(), category);
+      }
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="card" noValidate>
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="card" noValidate>
       <div className="mb-5">
-        <label htmlFor="claim" className="label mb-2 block">
+        <label htmlFor="claim" className="label mb-2.5 block">
           Claim
         </label>
         <textarea
@@ -82,7 +106,9 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
           <span
             className={
               claim.length > MAX_CLAIM_LENGTH - 50
-                ? "text-warn"
+                ? claim.length >= MAX_CLAIM_LENGTH
+                  ? "text-danger"
+                  : "text-warn"
                 : "text-ink-ghost"
             }
           >
@@ -125,20 +151,38 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         </AnimatePresence>
       </div>
 
-      <div className="mb-6">
-        <label htmlFor="source-url" className="label mb-2 block">
+      <div className="mb-5">
+        <label htmlFor="source-url" className="label mb-2.5 block">
           Source URL
         </label>
-        <input
-          id="source-url"
-          type="url"
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          onBlur={() => setTouched(true)}
-          placeholder="https://..."
-          aria-invalid={touched && !urlValid}
-          required
-        />
+        <div className="relative">
+          <Link2
+            size={16}
+            className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+              touched && urlValid ? "text-signal" : "text-ink-ghost"
+            } transition-colors`}
+          />
+          <input
+            id="source-url"
+            type="url"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            onBlur={() => setTouched(true)}
+            placeholder="https://..."
+            aria-invalid={touched && !urlValid}
+            required
+            className="!pl-10 !pr-10"
+          />
+          {touched && url.length > 0 && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2">
+              {urlValid ? (
+                <CheckCircle2 size={16} className="text-signal" />
+              ) : (
+                <XCircle size={16} className="text-danger" />
+              )}
+            </span>
+          )}
+        </div>
         {touched && !urlValid && url.length > 0 && (
           <p className="mt-2 text-xs text-danger">
             Must start with https://
@@ -147,24 +191,13 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
       </div>
 
       <div className="mb-6">
-        <label htmlFor="category" className="label mb-2 block">
-          Category
-        </label>
-        <select
-          id="category"
+        <CustomSelect
+          options={CATEGORY_OPTIONS}
           value={category}
-          onChange={(e) => setCategory(e.target.value as Category)}
-          className="w-full rounded-[10px] border border-line bg-void px-3 py-3.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <p className="mt-1.5 font-mono text-[0.65rem] text-ink-ghost">
-          Auto-suggested from claim text — change if needed.
-        </p>
+          onChange={(v) => setCategory(v as Category)}
+          label="Category"
+          helperText="Auto-suggested from claim text — change if needed."
+        />
       </div>
 
       <button
@@ -172,8 +205,31 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         className="btn-primary"
         disabled={!formValid || isLoading}
       >
-        {isLoading ? "Checking..." : "Check this claim"}
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-void/30 border-t-void" />
+            Verifying on-chain...
+          </span>
+        ) : (
+          "Check this claim →"
+        )}
       </button>
+
+      <div className="mt-3 text-center font-mono text-[0.65rem] text-ink-ghost">
+        Ctrl+Enter to submit
+      </div>
+
+      <div className="mt-5 flex items-center justify-center gap-4">
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
+          <Shield size={10} /> On-chain
+        </span>
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
+          <Zap size={10} /> ~30s
+        </span>
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
+          <Globe size={10} /> 3 sources
+        </span>
+      </div>
     </form>
   );
 }
