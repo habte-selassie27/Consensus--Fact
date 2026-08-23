@@ -6,6 +6,7 @@ import HistoryTable, {
   type SortDir,
   type SortField,
 } from "@/components/HistoryTable";
+import ConfidenceHeatmap from "@/components/ConfidenceHeatmap";
 import { EmptyHistoryState } from "@/components/States";
 import { CATEGORIES, getStoredCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
@@ -101,6 +102,10 @@ export default function HistoryPage() {
                 {cat}
               </button>
             ))}
+          </div>
+
+          <div className="mt-5">
+            <ConfidenceHeatmap records={records} />
           </div>
 
           <div className="mt-5">
