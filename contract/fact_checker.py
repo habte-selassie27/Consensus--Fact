@@ -85,6 +85,79 @@ class FactChecker(gl.Contract):
     def __init__(self):
         self.total_checks = 0
 
+    # ------------------------------------------------------------------
+    # Public methods (AGENTS.md 2.3)
+    # ------------------------------------------------------------------
+
+    @gl.public.write
+    def submit_claim(self, claim: str, source_url: str) -> str:
+        """Submit a claim + primary source URL; returns the on-chain check ID."""
+        self._validate_claim(claim)
+        self._validate_source_url(source_url)
+
+        check_id = str(gl.message.sender_address)[-8:] + str(gl.block.number)
+
+        def run():
+            return self._run_check_pipeline(claim, source_url)
+
+        outcome = gl.eq_principle.prompt_comparative(
+            run, principle=EQUIVALENCE_PRINCIPLE
+        )
+
+        parsed = _clean_json(outcome)
+        sources_checked, verdict, confidence, explanation = self._resolve_outcome(
+            parsed, source_url
+        )
+        self._store_record(
+            check_id=check_id,
+            claim=claim,
+            source_url=source_url,
+            verdict=verdict,
+            confidence=confidence,
+            explanation=explanation,
+            sources=sources_checked,
+        )
+        return check_id
+
+    @gl.public.view
+    def get_check(self, id: str) -> dict:
+        """Return a stored fact-check record by ID."""
+        if id not in self.checks:
+            raise gl.UserError("Check not found")
+        return self._record_to_dict(self.checks[id])
+
+    @gl.public.view
+    def get_recent_checks(self, limit: int = DEFAULT_RECENT_LIMIT) -> list:
+        """Return the last N checks sorted by timestamp desc (max 50)."""
+        if limit is None or limit <= 0:
+            limit = DEFAULT_RECENT_LIMIT
+        limit = min(limit, MAX_RECENT_LIMIT)
+
+        records = sorted(
+            list(self.checks.values()), key=lambda r: r.timestamp, reverse=True
+        )
+        return [self._record_to_dict(r) for r in records[:limit]]
+
+    @gl.public.view
+    def get_stats(self) -> dict:
+        """Return global contract stats."""
+        most_recent_timestamp = 0
+        for record in self.checks.values():
+            if record.timestamp > most_recent_timestamp:
+                most_recent_timestamp = record.timestamp
+        tallies = {}
+        for key, value in self.verdicts_by_type.items():
+            tallies[key] = value
+        return {
+            "total_checks": self.total_checks,
+            "verdicts_by_type": tallies,
+            "most_recent_timestamp": most_recent_timestamp,
+        }
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
     def _validate_claim(self, claim: str) -> None:
         if claim is None or len(claim.strip()) == 0:
             raise gl.UserError("Claim must be non-empty")
