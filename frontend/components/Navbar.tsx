@@ -15,6 +15,12 @@ export default function Navbar() {
 
         <nav className="flex items-center gap-4">
           <Link
+            href="/stats"
+            className="text-sm text-ink-dim hover:text-ink transition-colors"
+          >
+            Stats
+          </Link>
+          <Link
             href="/history"
             className="text-sm text-ink-dim hover:text-ink transition-colors"
           >
