@@ -38,11 +38,11 @@ export default function HomePage() {
 
   return (
     <div className="relative mx-auto max-w-page px-5 pb-24">
-      {/* Hero glow orb */}
-      <div className="hero-glow -top-40 left-1/2 -translate-x-1/2" />
+      {/* Hero glow */}
+      <div className="hero-glow top-0 left-1/2 -translate-x-1/2 -translate-y-1/3" />
 
       {/* Hero */}
-      <section className="relative pt-16 pb-12 sm:pt-28 sm:pb-16">
+      <section className="relative pt-20 pb-14 sm:pt-32 sm:pb-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -50,17 +50,17 @@ export default function HomePage() {
         >
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-signal/20 bg-signal/5 px-4 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-signal animate-pulse-ring" />
-            <span className="font-mono text-xs font-medium text-signal">
+            <span className="font-mono text-xs text-signal">
               Powered by GenLayer Intelligent Contracts
             </span>
           </div>
 
-          <h1 className="font-display text-[clamp(2.8rem,7vw,5.5rem)] font-bold leading-[0.95] tracking-tight">
+          <h1 className="font-display text-5xl font-bold leading-tight tracking-tight sm:text-7xl">
             Is it{" "}
             <span className="text-gradient-signal">true</span>?
           </h1>
 
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-ink-dim sm:text-lg">
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-ink-dim">
             Submit a claim and a source. Our on-chain contract cross-references
             three live sources and stores the verdict permanently &mdash; no API,
             no admin, no trust required.
@@ -71,7 +71,7 @@ export default function HomePage() {
       {/* Claim form */}
       <motion.section
         aria-label="Submit a claim"
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
       >
