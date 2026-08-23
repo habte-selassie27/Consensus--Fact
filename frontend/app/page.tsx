@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import ClaimForm from "@/components/ClaimForm";
 import RecentChecksTicker from "@/components/RecentChecksTicker";
-import TxStatusBar from "@/components/TxStatusBar";
+import ValidatorProgress from "@/components/ValidatorProgress";
 import { submitClaim } from "@/lib/genlayer";
 import type { TxStatus } from "@/lib/types";
 
@@ -79,7 +79,7 @@ export default function HomePage() {
           onSubmit={handleSubmit}
           isLoading={status === "pending" || status === "confirming"}
         />
-        <TxStatusBar
+        <ValidatorProgress
           status={status}
           txHash={txHash}
           errorMessage={errorMessage}
