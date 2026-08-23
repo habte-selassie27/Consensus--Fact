@@ -143,55 +143,41 @@ function coerceRecord(value: unknown): FactCheckRecord {
   };
 }
 
-function hexToUtf8(hex: string): string | null {
-  const match = /^0x[0-9a-fA-F]*$/.exec(hex);
-  if (!match) return null;
-  try {
-    const bytes = hex.slice(2);
-    let out = "";
-    for (let i = 0; i < bytes.length; i += 2) {
-      out += String.fromCharCode(parseInt(bytes.slice(i, i + 2), 16));
-    }
-    return out;
-  } catch {
-    return null;
-  }
-}
+function extractCheckIdFromTrace(trace: Record<string, unknown>): string | null {
+  const returnData = trace.return_data;
+  if (typeof returnData !== "string" || !returnData.startsWith("0x")) return null;
 
-function extractCheckIdFromReceipt(receipt: Record<string, unknown>): string | null {
-  for (const key of ["return_value", "returnValue", "result"]) {
-    const value = receipt[key];
-    if (typeof value === "string" && value.length > 0 && !value.startsWith("0x")) {
-      return value;
-    }
+  const bytes = returnData.slice(2);
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 2) {
+    const code = parseInt(bytes.slice(i, i + 2), 16);
+    if (code === 0) break;
+    out += String.fromCharCode(code);
   }
-  const returnData = receipt.return_data;
-  if (typeof returnData === "string" && returnData.startsWith("0x")) {
-    const decoded = hexToUtf8(returnData);
-    if (decoded) {
-      try {
-        const parsed = JSON.parse(decoded) as Record<string, unknown>;
-        const id = parsed.checkId ?? parsed.id;
-        if (typeof id === "string") return id;
-      } catch {
-        if (decoded.length > 0) return decoded.trim();
-      }
-    }
+
+  if (!out) return null;
+
+  try {
+    const parsed = JSON.parse(out) as Record<string, unknown>;
+    const id = parsed.checkId ?? parsed.id;
+    if (typeof id === "string" && id.length > 0) return id;
+  } catch {
+    // not JSON — might be a raw string ID
+    if (out.length > 0 && out.length < 200) return out.trim();
   }
   return null;
 }
 
-async function findCheckIdByMatch(
-  claim: string,
+async function findLatestCheckId(
   submitter: string
 ): Promise<string | null> {
+  // small delay to let state propagate after consensus
+  await new Promise((r) => setTimeout(r, 3000));
   try {
-    const recent = await getRecentChecks(10);
-    const normalizedSubmitter = submitter.toLowerCase();
+    const recent = await getRecentChecks(5);
+    const normalized = submitter.toLowerCase();
     const match = recent.find(
-      (record) =>
-        record.claim === claim &&
-        (!submitter || record.submitter.toLowerCase() === normalizedSubmitter)
+      (r) => r.submitter.toLowerCase() === normalized
     );
     return match?.id ?? null;
   } catch {
@@ -246,9 +232,23 @@ export async function submitClaim(
     );
   }
 
-  const checkId =
-    extractCheckIdFromReceipt(receipt) ??
-    (await findCheckIdByMatch(claim, account));
+  // Strategy 1: extract from debug trace
+  let checkId: string | null = null;
+  try {
+    const trace = asRecord(
+      await readClient.debugTraceTransaction({
+        hash: txHash as unknown as Hash,
+      })
+    );
+    checkId = extractCheckIdFromTrace(trace);
+  } catch {
+    // debug trace may not be available yet
+  }
+
+  // Strategy 2: poll get_recent_checks for latest record from this submitter
+  if (!checkId) {
+    checkId = await findLatestCheckId(account);
+  }
 
   if (!checkId) {
     throw new GenLayerClientError(
