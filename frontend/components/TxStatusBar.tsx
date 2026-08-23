@@ -34,7 +34,7 @@ export default function TxStatusBar({
   return (
     <div
       role="status"
-      className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-line border-t-2 bg-surface/80 backdrop-blur px-4 py-3.5"
+      className="mt-5 card-sm flex items-center justify-between gap-4 border-t-2"
     >
       <div className="flex items-center gap-3">
         {status === "done" ? (
