@@ -143,38 +143,19 @@ function coerceRecord(value: unknown): FactCheckRecord {
   };
 }
 
-function extractCheckIdFromTrace(trace: Record<string, unknown>): string | null {
-  const returnData = trace.return_data;
-  if (typeof returnData !== "string" || !returnData.startsWith("0x")) return null;
-
-  const bytes = returnData.slice(2);
-  let out = "";
-  for (let i = 0; i < bytes.length; i += 2) {
-    const code = parseInt(bytes.slice(i, i + 2), 16);
-    if (code === 0) break;
-    out += String.fromCharCode(code);
-  }
-
-  if (!out) return null;
-
-  try {
-    const parsed = JSON.parse(out) as Record<string, unknown>;
-    const id = parsed.checkId ?? parsed.id;
-    if (typeof id === "string" && id.length > 0) return id;
-  } catch {
-    // not JSON — might be a raw string ID
-    if (out.length > 0 && out.length < 200) return out.trim();
-  }
-  return null;
+function computeCheckId(senderAddress: string, blockNumber: bigint): string {
+  // Matches contract logic: str(gl.message.sender_address)[-8:] + str(gl.block.number)
+  const last8 = senderAddress.slice(-8);
+  return last8 + blockNumber.toString();
 }
 
 async function findLatestCheckId(
   submitter: string
 ): Promise<string | null> {
   // small delay to let state propagate after consensus
-  await new Promise((r) => setTimeout(r, 3000));
+  await new Promise((r) => setTimeout(r, 2000));
   try {
-    const recent = await getRecentChecks(5);
+    const recent = await getRecentChecks(10);
     const normalized = submitter.toLowerCase();
     const match = recent.find(
       (r) => r.submitter.toLowerCase() === normalized
@@ -232,17 +213,27 @@ export async function submitClaim(
     );
   }
 
-  // Strategy 1: extract from debug trace
+  // Strategy 1: compute check ID from sender address + block number
+  // Matches contract: check_id = str(gl.message.sender_address)[-8:] + str(gl.block.number)
   let checkId: string | null = null;
   try {
-    const trace = asRecord(
-      await readClient.debugTraceTransaction({
+    const tx = asRecord(
+      await readClient.getTransaction({
         hash: txHash as unknown as Hash,
       })
     );
-    checkId = extractCheckIdFromTrace(trace);
+    const blockNumber = tx.blockNumber;
+    if (blockNumber && (typeof blockNumber === "bigint" || typeof blockNumber === "number" || typeof blockNumber === "string")) {
+      checkId = computeCheckId(account, BigInt(blockNumber));
+      // Verify it exists on-chain
+      try {
+        await getCheck(checkId);
+      } catch {
+        checkId = null;
+      }
+    }
   } catch {
-    // debug trace may not be available yet
+    // getTransaction may not be available
   }
 
   // Strategy 2: poll get_recent_checks for latest record from this submitter
