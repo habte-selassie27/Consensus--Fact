@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
+import ChallengePanel from "@/components/ChallengePanel";
 import ConfidenceRing from "@/components/ConfidenceRing";
 import ScanLine from "@/components/ScanLine";
 import ShareCardActions from "@/components/ShareCardActions";
@@ -132,6 +133,8 @@ export default function ResultPage() {
       </section>
 
       <ShareCardActions record={record} />
+
+      <ChallengePanel original={record} />
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row">
         <button type="button" onClick={handleShare} className="rounded-md border border-line px-4 py-3.5 text-center font-display text-sm font-semibold tracking-wide text-ink transition-colors hover:border-signal/40 sm:flex-1">
