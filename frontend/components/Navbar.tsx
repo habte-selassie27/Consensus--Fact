@@ -26,6 +26,12 @@ export default function Navbar() {
             Stats
           </Link>
           <Link
+            href="/leaderboard"
+            className="text-sm text-ink-dim hover:text-ink transition-colors"
+          >
+            Top
+          </Link>
+          <Link
             href="/history"
             className="text-sm text-ink-dim hover:text-ink transition-colors"
           >
