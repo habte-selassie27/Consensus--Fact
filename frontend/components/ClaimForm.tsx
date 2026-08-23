@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { LinkIcon, FileText, AlertCircle } from "lucide-react";
 
 interface ClaimFormProps {
   onSubmit: (claim: string, url: string) => void;
@@ -30,47 +29,26 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="glass rounded-2xl p-6 sm:p-8 glow-signal"
-      noValidate
-    >
-      {/* Claim field */}
-      <div className="mb-6">
-        <label
-          htmlFor="claim"
-          className="label mb-2.5 flex items-center gap-2"
-        >
-          <FileText size={13} className="text-ink-ghost" />
+    <form onSubmit={handleSubmit} className="card" noValidate>
+      <div className="mb-5">
+        <label htmlFor="claim" className="label mb-2 block">
           Claim
         </label>
-        <div className="relative">
-          <textarea
-            id="claim"
-            rows={4}
-            value={claim}
-            maxLength={MAX_CLAIM_LENGTH}
-            onChange={(event) => setClaim(event.target.value)}
-            onBlur={() => setTouched(true)}
-            placeholder='e.g. "The Great Wall of China is visible from space with the naked eye."'
-            aria-invalid={touched && !claimValid}
-            required
-            className="!rounded-xl"
-          />
-        </div>
+        <textarea
+          id="claim"
+          rows={4}
+          value={claim}
+          maxLength={MAX_CLAIM_LENGTH}
+          onChange={(event) => setClaim(event.target.value)}
+          onBlur={() => setTouched(true)}
+          placeholder='e.g. "The Great Wall of China is visible from space with the naked eye."'
+          aria-invalid={touched && !claimValid}
+          required
+        />
         <div className="mt-2 flex justify-between font-mono text-xs">
           <span className="text-ink-ghost">
-            {touched && !claimValid && claim.trim().length > 0 ? (
-              <span className="flex items-center gap-1 text-danger">
-                <AlertCircle size={11} />
-                Minimum {MIN_CLAIM_LENGTH} characters
-              </span>
-            ) : (
-              <span className="text-ink-ghost/50">
-                {claim.trim().length > 0
-                  ? ""
-                  : "Minimum 10 characters"}
-              </span>
+            {touched && !claimValid && claim.trim().length > 0 && (
+              <span className="text-danger">Min {MIN_CLAIM_LENGTH} chars</span>
             )}
           </span>
           <span
@@ -85,13 +63,8 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         </div>
       </div>
 
-      {/* URL field */}
-      <div className="mb-7">
-        <label
-          htmlFor="source-url"
-          className="label mb-2.5 flex items-center gap-2"
-        >
-          <LinkIcon size={13} className="text-ink-ghost" />
+      <div className="mb-6">
+        <label htmlFor="source-url" className="label mb-2 block">
           Source URL
         </label>
         <input
@@ -103,30 +76,20 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
           placeholder="https://..."
           aria-invalid={touched && !urlValid}
           required
-          className="!rounded-xl"
         />
         {touched && !urlValid && url.length > 0 && (
-          <p className="mt-2 flex items-center gap-1 text-xs text-danger">
-            <AlertCircle size={11} />
-            Source URL must start with https://
+          <p className="mt-2 text-xs text-danger">
+            Must start with https://
           </p>
         )}
       </div>
 
-      {/* Submit */}
       <button
         type="submit"
         className="btn-primary"
         disabled={!formValid || isLoading}
       >
-        {isLoading ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-void/30 border-t-void" />
-            Checking...
-          </span>
-        ) : (
-          "Check this claim"
-        )}
+        {isLoading ? "Checking..." : "Check this claim"}
       </button>
     </form>
   );
