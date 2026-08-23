@@ -8,6 +8,7 @@ TRUE / FALSE / MISLEADING / UNVERIFIABLE with confidence score & explanation.
 """
 
 import json
+import time
 from dataclasses import dataclass
 
 from genlayer import *
@@ -106,7 +107,7 @@ class FactCheckRecord:
     confidence: bigint        # 0-100
     explanation: str          # LLM-generated 2-3 sentence reasoning
     sources_checked: DynArray[str]
-    timestamp: bigint         # block timestamp
+    timestamp: bigint         # int(time.time()) — tx-pinned clock
     submitter: str            # wallet address
 
 
@@ -128,7 +129,8 @@ class FactChecker(gl.Contract):
         self._validate_claim(claim)
         self._validate_source_url(source_url)
 
-        check_id = str(gl.message.sender_address)[-8:] + str(gl.block.number)
+        # GenVM has no block number; use tx-pinned timestamp for uniqueness
+        check_id = str(gl.message.sender_address)[-8:] + str(int(time.time()))
 
         def run():
             return self._run_check_pipeline(claim, source_url)
@@ -373,10 +375,8 @@ Rules:
         }
 
     def _current_timestamp(self) -> int:
-        try:
-            return int(gl.block.timestamp)
-        except Exception:
-            return int(gl.block.number)
+        # Transaction-pinned clock: deterministic across all validators
+        return int(time.time())
 
     def _store_record(
         self,
@@ -395,7 +395,7 @@ Rules:
             verdict=verdict,
             confidence=confidence,
             explanation=explanation,
-            sources_checked=DynArray[str](),
+            sources_checked=[],
             timestamp=self._current_timestamp(),
             submitter=str(gl.message.sender_address),
         )

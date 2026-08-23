@@ -143,27 +143,27 @@ function coerceRecord(value: unknown): FactCheckRecord {
   };
 }
 
-function computeCheckId(senderAddress: string, blockNumber: bigint): string {
-  // Matches contract logic: str(gl.message.sender_address)[-8:] + str(gl.block.number)
-  const last8 = senderAddress.slice(-8);
-  return last8 + blockNumber.toString();
-}
-
 async function findLatestCheckId(
-  submitter: string
+  submitter: string,
+  claim: string
 ): Promise<string | null> {
-  // small delay to let state propagate after consensus
-  await new Promise((r) => setTimeout(r, 2000));
-  try {
-    const recent = await getRecentChecks(10);
-    const normalized = submitter.toLowerCase();
-    const match = recent.find(
-      (r) => r.submitter.toLowerCase() === normalized
-    );
-    return match?.id ?? null;
-  } catch {
-    return null;
+  // Poll while state propagates after consensus (LLM checks can lag)
+  const normalized = submitter.toLowerCase();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await new Promise((r) => setTimeout(r, 2000 + attempt * 1000));
+    try {
+      const recent = await getRecentChecks(10);
+      const match = recent.find(
+        (r) =>
+          r.submitter.toLowerCase() === normalized &&
+          (!claim || r.claim === claim)
+      );
+      if (match) return match.id;
+    } catch {
+      // retry
+    }
   }
+  return null;
 }
 
 export async function submitClaim(
@@ -213,33 +213,9 @@ export async function submitClaim(
     );
   }
 
-  // Strategy 1: compute check ID from sender address + block number
-  // Matches contract: check_id = str(gl.message.sender_address)[-8:] + str(gl.block.number)
-  let checkId: string | null = null;
-  try {
-    const tx = asRecord(
-      await readClient.getTransaction({
-        hash: txHash as unknown as Hash,
-      })
-    );
-    const blockNumber = tx.blockNumber;
-    if (blockNumber && (typeof blockNumber === "bigint" || typeof blockNumber === "number" || typeof blockNumber === "string")) {
-      checkId = computeCheckId(account, BigInt(blockNumber));
-      // Verify it exists on-chain
-      try {
-        await getCheck(checkId);
-      } catch {
-        checkId = null;
-      }
-    }
-  } catch {
-    // getTransaction may not be available
-  }
-
-  // Strategy 2: poll get_recent_checks for latest record from this submitter
-  if (!checkId) {
-    checkId = await findLatestCheckId(account);
-  }
+  // Resolve the check ID by polling recent checks for this submitter + claim
+  // (contract generates ID as sender[-8:] + tx-pinned unix timestamp)
+  const checkId = await findLatestCheckId(account, claim);
 
   if (!checkId) {
     throw new GenLayerClientError(

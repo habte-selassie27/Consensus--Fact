@@ -79,7 +79,7 @@ class FactCheckRecord:
     confidence: int           # 0–100
     explanation: str          # LLM-generated 2–3 sentence reasoning
     sources_checked: DynArray[str]  # URLs actually fetched (NOT plain list)
-    timestamp: int            # block timestamp
+    timestamp: int            # int(time.time()) — tx-pinned clock, NOT gl.block.timestamp
     submitter: str            # wallet address
 
 class FactChecker(gl.Contract):
@@ -98,7 +98,7 @@ View methods return plain dicts (`_record_to_dict`), not dataclass instances.
 - **Logic:**
   1. Validate `claim` is non-empty, ≤500 chars
   2. Validate `source_url` starts with `https://`
-  3. Generate `id = gl.message.sender[-8:] + str(gl.block.number)`
+  3. Generate `id = gl.message.sender[-8:] + str(int(time.time()))` (no `gl.block` in GenVM)
   4. Fetch primary source: `primary_content = get_webpage(source_url, mode="text")`
   5. Use LLM to extract 2 corroborating source URLs from primary content
   6. Fetch both corroborating sources

@@ -120,6 +120,7 @@ def _build_fake_genlayer():
     module.TreeMap = _TreeMap
     module.DynArray = _DynArray
     module.allow_storage = _allow_storage
+    module.bigint = int  # GenVM's bigint is just Python int in tests
     return module, fake_gl
 
 
@@ -136,7 +137,11 @@ def _load_contract():
 
 contract = _load_contract()
 FactChecker = contract.FactChecker
-gl_block = FAKE_GL.block
+
+# Mock time.time() for deterministic timestamp control
+_FAKE_TIME_TS = 1755948000
+_mock_time = MagicMock(return_value=_FAKE_TIME_TS)
+contract.time.time = _mock_time
 
 # ---------------------------------------------------------------------------
 # Shared fixtures & helpers
@@ -194,14 +199,12 @@ def llm():
 @pytest.fixture()
 def fc(web, llm):
     EQUIVALENCE_CALLS.clear()
-    gl_block.number = 1042881
-    gl_block.timestamp = 1755948000
+    _mock_time.return_value = 1755948000
     yield FactChecker()
 
 
 def advance_block():
-    gl_block.number += 1
-    gl_block.timestamp += 12
+    _mock_time.return_value += 12
 
 
 def set_verdict(llm, verdict, confidence=90, explanation=None):
@@ -266,7 +269,7 @@ class TestRequiredSpec:
         stats = fc.get_stats()
         assert stats["total_checks"] == 3
         assert stats["verdicts_by_type"]["TRUE"] == 3
-        assert stats["most_recent_timestamp"] == gl_block.timestamp - 12
+        assert stats["most_recent_timestamp"] == _mock_time.return_value - 12
 
     def test_get_recent_limit(self, fc):
         for _ in range(20):
@@ -276,7 +279,7 @@ class TestRequiredSpec:
         timestamps = [r["timestamp"] for r in recent]
         assert timestamps == sorted(timestamps, reverse=True)
         newest_id = recent[0]["id"]
-        expected_newest = f"{FAKE_SENDER_SUFFIX}{gl_block.number - 1}"
+        expected_newest = f"{FAKE_SENDER_SUFFIX}{_mock_time.return_value - 12}"
         assert newest_id == expected_newest
 
 
@@ -301,7 +304,7 @@ class TestCoverage:
         assert record["claim"].startswith("The Great Wall")
         assert record["source_url"] == PRIMARY_URL
         assert record["submitter"] == FAKE_SENDER
-        assert record["timestamp"] == gl_block.timestamp - 12
+        assert record["timestamp"] == _mock_time.return_value - 12
         assert record["sources_checked"] == [PRIMARY_URL] + CORROBORATING_URLS
 
     def test_corroborating_fetch_failure_continues(self, fc, llm, web):
