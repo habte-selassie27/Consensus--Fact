@@ -36,6 +36,21 @@ PIPELINE_FAILURE_EXPLANATION = (
 )
 INVALID_VERDICT_EXPLANATION = "The model returned an unrecognized verdict value."
 
+ERROR_EXPECTED = "[EXPECTED]"
+ERROR_EXTERNAL = "[EXTERNAL]"
+ERROR_TRANSIENT = "[TRANSIENT]"
+ERROR_LLM = "[LLM_ERROR]"
+
+EQUIVALENCE_PRINCIPLE = """
+The payload is JSON with fields: status, sources, raw_result.
+For status 'ok', raw_result must contain verdict, confidence, explanation.
+The verdict field must be exactly the same across validator runs and one of: TRUE, FALSE, MISLEADING, UNVERIFIABLE.
+The confidence must be an integer between 0 and 100 and within 10 points across validator runs.
+The explanation must be a non-empty string; minor wording differences are acceptable.
+The extracted sources list must contain the same primary URL and equivalent corroborating URLs.
+A 'unreachable' status must agree with a 'unreachable' status.
+"""
+
 EXTRACT_URLS_PROMPT = """You are a research assistant. Below is the text content of a web page.
 
 PAGE CONTENT:
