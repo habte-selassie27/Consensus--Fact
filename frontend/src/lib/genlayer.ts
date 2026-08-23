@@ -7,7 +7,16 @@ import {
   testnetBradbury,
 } from "genlayer-js/chains";
 import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
-import { isVerdict, type ContractStats, type FactCheckRecord, type Verdict } from "./types";
+import {
+  isVerdict,
+  isVerificationMode,
+  isSourceStatus,
+  type ContractStats,
+  type FactCheckRecord,
+  type SourceStatus,
+  type VerificationMode,
+  type Verdict,
+} from "./types";
 
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS ?? "";
 export const NETWORK = import.meta.env.VITE_NETWORK ?? "studionet";
@@ -118,6 +127,8 @@ interface RawRecordShape extends Record<string, unknown> {
   sources_checked?: unknown;
   timestamp?: unknown;
   submitter?: unknown;
+  verification_mode?: unknown;
+  source_status?: unknown;
 }
 
 function coerceRecord(value: unknown): FactCheckRecord {
@@ -128,10 +139,23 @@ function coerceRecord(value: unknown): FactCheckRecord {
   if (typeof raw.id === "object" && raw.id !== null) {
     raw.id = (raw.id as { id?: unknown }).id ?? String(raw.id);
   }
+  const sourceUrl = String(raw.source_url ?? "");
+  const verificationMode: VerificationMode = isVerificationMode(
+    raw.verification_mode
+  )
+    ? raw.verification_mode
+    : sourceUrl
+      ? "SOURCE_VERIFIED"
+      : "KNOWLEDGE_BASED";
+  const sourceStatus: SourceStatus = isSourceStatus(raw.source_status)
+    ? raw.source_status
+    : sourceUrl
+      ? "FETCHED"
+      : "NOT_PROVIDED";
   return {
     id: String(raw.id ?? ""),
     claim: String(raw.claim ?? ""),
-    source_url: String(raw.source_url ?? ""),
+    source_url: sourceUrl,
     verdict: coerceVerdict(raw.verdict),
     confidence: Number(raw.confidence ?? 0),
     explanation: String(raw.explanation ?? ""),
@@ -140,6 +164,8 @@ function coerceRecord(value: unknown): FactCheckRecord {
       : [],
     timestamp: Number(raw.timestamp ?? 0),
     submitter: String(raw.submitter ?? ""),
+    verification_mode: verificationMode,
+    source_status: sourceStatus,
   };
 }
 
@@ -271,9 +297,20 @@ export async function getStats(): Promise<ContractStats> {
       verdicts_by_type[key] = Number(value);
     }
   }
+  const modesRaw =
+    raw.modes && typeof raw.modes === "object"
+      ? (raw.modes as Record<string, unknown>)
+      : {};
+  const modes: ContractStats["modes"] = {};
+  for (const [key, value] of Object.entries(modesRaw)) {
+    if (isVerificationMode(key)) {
+      modes[key] = Number(value);
+    }
+  }
   return {
     total_checks: Number(raw.total_checks ?? 0),
     verdicts_by_type,
+    modes,
     most_recent_timestamp: Number(raw.most_recent_timestamp ?? 0),
   };
 }

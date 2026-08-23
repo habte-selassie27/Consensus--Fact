@@ -11,6 +11,7 @@ interface TxStatusBarProps {
 }
 
 const STATUS_TEXT: Record<Exclude<TxStatus, "idle">, string> = {
+  wallet: "Waiting for wallet confirmation...",
   pending: "Fetching sources & running consensus...",
   confirming: "Validators reaching consensus...",
   done: "Verdict recorded on-chain",
