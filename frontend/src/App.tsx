@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import Navbar from "./components/Navbar";
+import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import History from "./pages/History";
 import Result from "./pages/Result";
@@ -38,6 +39,7 @@ export default function App() {
       <BrowserRouter>
         <div className="bg-void text-ink min-h-screen">
           <Navbar />
+          <ScrollToTop />
           <main>
             <Routes>
               <Route path="/" element={<Home />} />

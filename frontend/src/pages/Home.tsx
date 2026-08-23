@@ -6,10 +6,12 @@ import ClaimForm from "@/components/ClaimForm";
 import ClaimOfTheDay from "@/components/ClaimOfTheDay";
 import RecentChecksTicker from "@/components/RecentChecksTicker";
 import ValidatorProgress from "@/components/ValidatorProgress";
+import AnimatedCounter from "@/components/AnimatedCounter";
 import { saveCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
-import { submitClaim } from "@/lib/genlayer";
+import { submitClaim, getStats } from "@/lib/genlayer";
 import type { TxStatus } from "@/lib/types";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -17,6 +19,12 @@ export default function Home() {
   const [status, setStatus] = useState<TxStatus>("idle");
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data: stats } = useQuery({
+    queryKey: ["stats-home"],
+    queryFn: getStats,
+    retry: false,
+  });
 
   async function handleSubmit(claim: string, url: string, category: Category) {
     setStatus("pending");
@@ -44,51 +52,75 @@ export default function Home() {
     <div className="relative mx-auto max-w-page px-5 pb-24">
       <div className="hero-glow top-0 left-1/2 -translate-x-1/2 -translate-y-1/3" />
 
-      <section className="relative pt-20 pb-14 sm:pt-32 sm:pb-20">
+      {/* Hero section */}
+      <section className="relative pt-20 pb-10 sm:pt-32 sm:pb-14">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-signal/20 bg-signal/5 px-4 py-1.5">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-signal-border bg-signal-dim px-4 py-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-signal animate-pulse-ring" />
-            <span className="font-mono text-xs text-signal">
+            <span className="font-mono text-xs font-medium text-signal">
               Powered by GenLayer Intelligent Contracts
             </span>
           </div>
 
-          <h1 className="font-display text-5xl font-bold leading-tight tracking-tight sm:text-7xl">
+          <h1 className="font-display text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-[0.95] tracking-tight">
             Is it <span className="text-gradient-signal">true</span>?
           </h1>
 
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-ink-dim">
+          <p className="mt-5 max-w-[520px] text-base leading-relaxed text-ink-dim">
             Submit a claim and a source. Our on-chain contract cross-references
             three live sources and stores the verdict permanently &mdash; no API,
             no admin, no trust required.
           </p>
+
+          {/* Stats strip */}
+          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 font-mono text-ink-dim">
+              <AnimatedCounter
+                value={stats?.total_checks ?? 0}
+                className="font-semibold text-ink"
+              />
+              <span>claims verified</span>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-2 font-mono text-ink-dim">
+              <span className="font-semibold text-ink">3</span>
+              <span>sources per check</span>
+            </div>
+            <span className="h-3 w-px bg-line" />
+            <div className="flex items-center gap-2 font-mono text-ink-dim">
+              <span className="font-semibold text-signal">100%</span>
+              <span>on-chain</span>
+            </div>
+          </div>
         </motion.div>
       </section>
 
       <ClaimOfTheDay />
 
+      {/* Form section */}
       <motion.section
         aria-label="Submit a claim"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
       >
+        {/* Tab switcher */}
         <div
           role="tablist"
           aria-label="Claim submission mode"
-          className="mb-4 inline-flex rounded-lg border border-line bg-surface p-1"
+          className="mb-4 inline-flex rounded-lg bg-surface-2 p-1"
         >
           <button
             role="tab"
             aria-selected={mode === "single"}
             onClick={() => setMode("single")}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
               mode === "single"
-                ? "bg-signal text-void"
+                ? "bg-surface-3 text-ink shadow-sm"
                 : "text-ink-dim hover:text-ink"
             }`}
           >
@@ -98,9 +130,9 @@ export default function Home() {
             role="tab"
             aria-selected={mode === "batch"}
             onClick={() => setMode("batch")}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-all ${
               mode === "batch"
-                ? "bg-signal text-void"
+                ? "bg-surface-3 text-ink shadow-sm"
                 : "text-ink-dim hover:text-ink"
             }`}
           >

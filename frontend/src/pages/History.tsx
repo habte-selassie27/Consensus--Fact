@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import HistoryTable, {
   type SortDir,
   type SortField,
 } from "@/components/HistoryTable";
 import ConfidenceHeatmap from "@/components/ConfidenceHeatmap";
 import { EmptyHistoryState } from "@/components/States";
+import { SkeletonList } from "@/components/Skeleton";
 import { CATEGORIES, getStoredCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
 import { getRecentChecks } from "@/lib/genlayer";
@@ -14,6 +16,13 @@ import { VERDICTS, type Verdict } from "@/lib/types";
 type VerdictFilter = "ALL" | Verdict;
 
 const FILTERS: VerdictFilter[] = ["ALL", ...VERDICTS];
+
+const VERDICT_DOT_COLORS: Record<Verdict, string> = {
+  TRUE: "bg-signal",
+  FALSE: "bg-danger",
+  MISLEADING: "bg-warn",
+  UNVERIFIABLE: "bg-mute",
+};
 
 export default function History() {
   const [filter, setFilter] = useState<VerdictFilter>("ALL");
@@ -69,48 +78,63 @@ export default function History() {
           : `${records.length} claim${records.length === 1 ? "" : "s"} verified. All results permanent and publicly verifiable.`}
       </p>
 
-      {!isError && records.length > 0 && (
+      {isLoading && <div className="mt-8"><SkeletonList count={4} /></div>}
+
+      {!isError && !isLoading && records.length > 0 && (
         <>
-          <div className="mt-6">
+          {/* Search */}
+          <div className="relative mt-6">
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-ghost" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search claims…"
+              placeholder="Search claims..."
               aria-label="Search claims"
-              className="w-full rounded-lg border border-line bg-void px-4 py-2.5 font-mono text-sm text-ink placeholder:text-ink-ghost focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/10"
+              className="!pl-10"
             />
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2" role="group" aria-label="Filter by verdict">
-            {FILTERS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setFilter(option)}
-                aria-pressed={filter === option}
-                className={`rounded-sm border px-3 py-1.5 font-mono text-xs tracking-wide transition-colors ${
-                  filter === option
-                    ? "border-signal bg-signal/10 text-signal"
-                    : "border-line text-ink-dim hover:border-line/60 hover:text-ink"
-                }`}
-              >
-                {option}
-              </button>
-            ))}
+          {/* Verdict filter pills */}
+          <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filter by verdict">
+            {FILTERS.map((option) => {
+              const count = option === "ALL"
+                ? records.length
+                : records.filter((r) => r.verdict === option).length;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setFilter(option)}
+                  aria-pressed={filter === option}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-xs tracking-wide transition-colors ${
+                    filter === option
+                      ? "border-signal bg-signal/10 text-signal"
+                      : "border-line text-ink-dim hover:border-line-bright hover:text-ink"
+                  }`}
+                >
+                  {option !== "ALL" && (
+                    <span className={`h-1.5 w-1.5 rounded-full ${VERDICT_DOT_COLORS[option as Verdict]}`} />
+                  )}
+                  {option}
+                  <span className="text-[0.6rem] opacity-60">{count}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+          {/* Category filter pills */}
+          <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filter by category">
             {(["ALL", ...CATEGORIES] as const).map((cat) => (
               <button
                 key={cat}
                 type="button"
                 onClick={() => setCategoryFilter(cat as Category | "ALL")}
                 aria-pressed={categoryFilter === cat}
-                className={`rounded-sm border px-3 py-1.5 font-mono text-xs tracking-wide transition-colors ${
+                className={`rounded-full border px-3 py-1.5 font-mono text-xs tracking-wide transition-colors ${
                   categoryFilter === cat
                     ? "border-pending bg-pending/10 text-pending"
-                    : "border-line text-ink-dim hover:border-line/60 hover:text-ink"
+                    : "border-line text-ink-dim hover:border-line-bright hover:text-ink"
                 }`}
               >
                 {cat}
@@ -118,10 +142,12 @@ export default function History() {
             ))}
           </div>
 
-          <div className="mt-5">
+          {/* Heatmap */}
+          <div className="mt-6">
             <ConfidenceHeatmap records={records} />
           </div>
 
+          {/* Table */}
           <div className="mt-5">
             <HistoryTable
               records={visibleRecords}
