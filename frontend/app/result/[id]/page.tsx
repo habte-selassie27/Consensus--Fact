@@ -13,6 +13,7 @@ import ScanLine from "@/components/ScanLine";
 import ShareCardActions from "@/components/ShareCardActions";
 import SourcePanel from "@/components/SourcePanel";
 import VerdictCard from "@/components/VerdictCard";
+import VerdictTimeline from "@/components/VerdictTimeline";
 import { ClaimNotFoundState } from "@/components/States";
 import { getStoredCategory } from "@/lib/categories";
 import { getCheck } from "@/lib/genlayer";
@@ -129,6 +130,8 @@ export default function ResultPage() {
         <h2 className="label mb-3">Sources checked</h2>
         <SourcePanel sources={[record.source_url, ...record.sources_checked.filter((s) => s !== record.source_url)]} />
       </motion.section>
+
+      <VerdictTimeline record={record} />
 
       <section aria-label="Metadata" className="mt-8 space-y-1 font-mono text-xs text-ink-dim">
         <p>Check ID: {record.id}</p>
