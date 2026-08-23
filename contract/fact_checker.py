@@ -63,6 +63,39 @@ Respond ONLY with a valid JSON array of URL strings, no markdown, no preamble:
 """
 
 
+def _clean_json(text):
+    if isinstance(text, dict) or isinstance(text, list):
+        return text
+    raw = str(text).strip()
+    if raw.startswith("```"):
+        newline = raw.find("\n")
+        if newline != -1:
+            raw = raw[newline + 1 :]
+        if raw.rstrip().endswith("```"):
+            raw = raw.rstrip()[:-3]
+        raw = raw.strip()
+    candidates = []
+    brace_start = raw.find("{")
+    brace_end = raw.rfind("}")
+    bracket_start = raw.find("[")
+    bracket_end = raw.rfind("]")
+    if bracket_start != -1 and (brace_start == -1 or bracket_start < brace_start):
+        if bracket_end > bracket_start:
+            candidates.append(raw[bracket_start : bracket_end + 1])
+    if brace_start != -1 and brace_end > brace_start:
+        candidates.append(raw[brace_start : brace_end + 1])
+    candidates.append(raw)
+    import re
+
+    for candidate in candidates:
+        cleaned = re.sub(r",(?!\s*?[\{\[\"\'\w])", "", candidate)
+        try:
+            return json.loads(cleaned)
+        except (ValueError, TypeError):
+            continue
+    return None
+
+
 @allow_storage
 @dataclass
 class FactCheckRecord:
