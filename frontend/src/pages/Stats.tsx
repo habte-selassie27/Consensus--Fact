@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
-import { Activity, Scale, Timer } from "lucide-react";
+import { Activity, Brain, Globe, Scale, Timer } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import VerdictDonut from "@/components/VerdictDonut";
 import { verdictBadgeClass, VERDICT_DOT_CLASSES } from "@/components/verdictStyles";
@@ -131,7 +131,39 @@ export default function Stats() {
             Failed to load stats. Is the contract configured?
           </p>
         ) : (
-          <VerdictDonut counts={stats?.verdicts_by_type ?? {}} total={total} />
+          <>
+            <VerdictDonut counts={stats?.verdicts_by_type ?? {}} total={total} />
+            {stats?.modes && (
+              <div className="mt-6 grid grid-cols-2 gap-3 border-t border-line pt-5">
+                <div className="rounded-lg border border-signal-border bg-signal-dim px-4 py-3">
+                  <p className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold tracking-wider text-signal">
+                    <Globe size={11} /> SOURCE-VERIFIED
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-bold">
+                    {stats.modes.SOURCE_VERIFIED ?? 0}
+                    <span className="ml-1.5 font-mono text-xs font-normal text-ink-dim">
+                      {total > 0
+                        ? `${Math.round(((stats.modes.SOURCE_VERIFIED ?? 0) / total) * 100)}%`
+                        : ""}
+                    </span>
+                  </p>
+                </div>
+                <div className="rounded-lg border border-pending/30 bg-pending-dim px-4 py-3">
+                  <p className="flex items-center gap-1.5 font-mono text-[0.6rem] font-semibold tracking-wider text-pending">
+                    <Brain size={11} /> KNOWLEDGE-BASED
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-bold">
+                    {stats.modes.KNOWLEDGE_BASED ?? 0}
+                    <span className="ml-1.5 font-mono text-xs font-normal text-ink-dim">
+                      {total > 0
+                        ? `${Math.round(((stats.modes.KNOWLEDGE_BASED ?? 0) / total) * 100)}%`
+                        : ""}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </motion.section>
 

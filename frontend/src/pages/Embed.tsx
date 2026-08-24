@@ -59,12 +59,21 @@ export default function Embed() {
             </span>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <span
               className={`rounded border px-2.5 py-1 font-display text-[0.65rem] font-bold tracking-widest ${verdictBadgeClass(record.verdict)}`}
             >
               {record.verdict}
             </span>
+            {record.verification_mode === "SOURCE_VERIFIED" ? (
+              <span className="rounded border border-signal-border bg-signal-dim px-2 py-0.5 font-mono text-[0.6rem] text-signal">
+                Source-verified
+              </span>
+            ) : (
+              <span className="rounded border border-pending/30 bg-pending-dim px-2 py-0.5 font-mono text-[0.6rem] text-pending">
+                Knowledge-based
+              </span>
+            )}
             <span className="font-mono text-[0.65rem] text-ink-ghost">
               Verified on GenLayer
             </span>
