@@ -7,6 +7,7 @@ export type CredibilityTier =
 export interface Credibility {
   tier: CredibilityTier;
   label: string;
+  score: number;
   dotClass: string;
   badgeClass: string;
 }
@@ -79,6 +80,7 @@ export function getCredibility(url: string): Credibility {
     return {
       tier: "AUTHORITATIVE",
       label: "Authoritative",
+      score: 95,
       dotClass: "bg-signal",
       badgeClass: "border-signal/40 bg-signal/10 text-signal",
     };
@@ -89,6 +91,7 @@ export function getCredibility(url: string): Credibility {
       return {
         tier: "AUTHORITATIVE",
         label: "Authoritative",
+        score: 95,
         dotClass: "bg-signal",
         badgeClass: "border-signal/40 bg-signal/10 text-signal",
       };
@@ -100,6 +103,7 @@ export function getCredibility(url: string): Credibility {
       return {
         tier: "CREDIBLE",
         label: "Credible",
+        score: 85,
         dotClass: "bg-pending",
         badgeClass: "border-pending/40 bg-pending/10 text-pending",
       };
@@ -111,6 +115,7 @@ export function getCredibility(url: string): Credibility {
       return {
         tier: "UNRELIABLE",
         label: "Unreliable",
+        score: 30,
         dotClass: "bg-danger",
         badgeClass: "border-danger/40 bg-danger/10 text-danger",
       };
@@ -120,6 +125,7 @@ export function getCredibility(url: string): Credibility {
   return {
     tier: "UNKNOWN",
     label: "Unknown",
+    score: 50,
     dotClass: "bg-mute",
     badgeClass: "border-line bg-surface text-ink-ghost",
   };

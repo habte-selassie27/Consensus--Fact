@@ -1,12 +1,23 @@
-"use client";
-
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { Brain, Check, ChevronDown, Globe, X } from "lucide-react";
 import { getCredibility } from "@/lib/sourceCredibility";
+import type { SourceStatus } from "@/lib/types";
+import { SOURCE_STATUS_LABELS } from "@/lib/types";
 
 interface SourcePanelProps {
   sources: string[];
+  primaryStatus?: SourceStatus;
 }
+
+const STATUS_BADGE: Record<SourceStatus, { label: string; ok: boolean; cls: string }> = {
+  NOT_PROVIDED: { label: "Not provided", ok: false, cls: "border-line text-ink-ghost" },
+  FETCHED: { label: "Fetched", ok: true, cls: "border-signal/40 text-signal" },
+  EMPTY: { label: "Empty", ok: false, cls: "border-warn/40 text-warn" },
+  BLOCKED: { label: "Blocked", ok: false, cls: "border-danger/40 text-danger" },
+  TIMEOUT: { label: "Timeout", ok: false, cls: "border-warn/40 text-warn" },
+  INVALID: { label: "Invalid", ok: false, cls: "border-danger/40 text-danger" },
+  ERROR: { label: "Error", ok: false, cls: "border-danger/40 text-danger" },
+};
 
 function domainOf(url: string): string {
   try {
@@ -26,22 +37,25 @@ function faviconUrl(url: string): string {
   }
 }
 
-export default function SourcePanel({ sources }: SourcePanelProps) {
+export default function SourcePanel({ sources, primaryStatus = "FETCHED" }: SourcePanelProps) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   return (
     <ul className="divide-y divide-line-dim rounded-lg border border-line bg-surface">
       {sources.map((url, index) => {
         const isExpanded = expanded === index;
+        const isPrimary = index === 0;
         const cred = getCredibility(url);
+        const status: SourceStatus = isPrimary ? primaryStatus : "FETCHED";
+        const badge = STATUS_BADGE[status];
         return (
           <li key={`${url}-${index}`}>
             <button
               type="button"
               onClick={() => setExpanded(isExpanded ? null : index)}
+              aria-expanded={isExpanded}
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-line-dim/40"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={faviconUrl(url)}
                 alt=""
@@ -52,14 +66,27 @@ export default function SourcePanel({ sources }: SourcePanelProps) {
               <span className="flex-1 truncate font-mono text-[0.8rem] text-ink">
                 {isExpanded ? url : domainOf(url).slice(0, 48)}
               </span>
+              {isPrimary && (
+                <span className="shrink-0 rounded border border-signal-border bg-signal-dim px-1.5 py-0.5 font-mono text-[0.55rem] font-bold tracking-widest text-signal">
+                  PRIMARY
+                </span>
+              )}
               <span
-                className={`shrink-0 rounded border px-2 py-0.5 font-mono text-[0.6rem] font-semibold tracking-wide ${cred.badgeClass}`}
+                className={`hidden shrink-0 rounded border px-2 py-0.5 font-mono text-[0.6rem] font-semibold tracking-wide sm:inline ${cred.badgeClass}`}
+                title={`Source quality: ${cred.score}/100`}
               >
-                {cred.label}
+                {cred.label} · {cred.score}
               </span>
-              <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-signal">
-                <Check size={12} aria-hidden="true" /> Fetched
+              <span
+                className={`flex shrink-0 items-center gap-1 rounded border px-2 py-0.5 font-mono text-[0.6rem] ${badge.cls}`}
+              >
+                {badge.ok ? <Check size={11} /> : <X size={11} />}
+                {badge.label}
               </span>
+              <ChevronDown
+                size={13}
+                className={`shrink-0 text-ink-ghost transition-transform ${isExpanded ? "rotate-180" : ""}`}
+              />
             </button>
           </li>
         );
@@ -71,5 +98,30 @@ export default function SourcePanel({ sources }: SourcePanelProps) {
         </li>
       )}
     </ul>
+  );
+}
+
+export function KnowledgeEvidenceNote() {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-line bg-surface-2 px-4 py-4">
+      <Brain size={16} className="mt-0.5 shrink-0 text-pending" />
+      <div>
+        <p className="text-sm font-medium text-ink">Knowledge-based verification</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-dim">
+          No external sources were fetched. The verdict reflects the AI model's own
+          knowledge, with confidence capped at 85. Submit with a source URL for a
+          source-verified verdict.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function SourceStatusLegend() {
+  return (
+    <p className="mt-2 flex items-center gap-1.5 font-mono text-[0.6rem] text-ink-ghost">
+      <Globe size={10} />
+      Status reflects the on-chain fetch result recorded at verification time.
+    </p>
   );
 }

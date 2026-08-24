@@ -193,7 +193,10 @@ export default function Result() {
             </p>
           </div>
         ) : (
-          <SourcePanel sources={[record.source_url, ...record.sources_checked.filter((s) => s !== record.source_url)]} />
+          <SourcePanel
+            sources={[record.source_url, ...record.sources_checked.filter((s) => s !== record.source_url)]}
+            primaryStatus={record.source_status}
+          />
         )}
       </motion.section>
 
