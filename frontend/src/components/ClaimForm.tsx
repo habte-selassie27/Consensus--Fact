@@ -26,13 +26,59 @@ interface ClaimFormProps {
 const MIN_CLAIM_LENGTH = 10;
 const MAX_CLAIM_LENGTH = 500;
 
-const SUGGESTED_SOURCES: { label: string; url: string; tier: "gov" | "encyclopedia" | "news" }[] = [
+const SUGGESTED_SOURCES: { label: string; url: string; tier: "gov" | "encyclopedia" | "news" | "social" | "science" | "content" }[] = [
+  // Encyclopedia & Knowledge
   { label: "Wikipedia", url: "https://en.wikipedia.org", tier: "encyclopedia" },
+  { label: "Britannica", url: "https://www.britannica.com", tier: "encyclopedia" },
+  // Government & Institutional
   { label: "NASA", url: "https://www.nasa.gov", tier: "gov" },
+  { label: "WHO", url: "https://www.who.int", tier: "gov" },
+  { label: "UN", url: "https://www.un.org", tier: "gov" },
+  { label: "NIH", url: "https://www.nih.gov", tier: "gov" },
+  { label: "CDC", url: "https://www.cdc.gov", tier: "gov" },
+  { label: "EU", url: "https://europa.eu", tier: "gov" },
+  { label: "World Bank", url: "https://www.worldbank.org", tier: "gov" },
+  { label: "IMF", url: "https://www.imf.org", tier: "gov" },
+  // News
   { label: "Reuters", url: "https://www.reuters.com", tier: "news" },
   { label: "BBC", url: "https://www.bbc.com", tier: "news" },
   { label: "AP News", url: "https://apnews.com", tier: "news" },
-  { label: "WHO", url: "https://www.who.int", tier: "gov" },
+  { label: "Al Jazeera", url: "https://www.aljazeera.com", tier: "news" },
+  { label: "NY Times", url: "https://www.nytimes.com", tier: "news" },
+  { label: "Guardian", url: "https://www.theguardian.com", tier: "news" },
+  { label: "Bloomberg", url: "https://www.bloomberg.com", tier: "news" },
+  { label: "NPR", url: "https://www.npr.org", tier: "news" },
+  { label: "DW", url: "https://www.dw.com", tier: "news" },
+  { label: "France24", url: "https://www.france24.com", tier: "news" },
+  // Science & Research
+  { label: "Nature", url: "https://www.nature.com", tier: "science" },
+  { label: "Science.org", url: "https://www.science.org", tier: "science" },
+  { label: "arXiv", url: "https://arxiv.org", tier: "science" },
+  { label: "PubMed", url: "https://pubmed.ncbi.nlm.nih.gov", tier: "science" },
+  { label: "Sciencedirect", url: "https://www.sciencedirect.com", tier: "science" },
+  { label: "Smithsonian", url: "https://www.smithsonianmag.com", tier: "science" },
+  { label: "Nat Geo", url: "https://www.nationalgeographic.com", tier: "science" },
+  { label: "SciAmerican", url: "https://www.scientificamerican.com", tier: "science" },
+  // Social Media & Platforms
+  { label: "X / Twitter", url: "https://x.com", tier: "social" },
+  { label: "Reddit", url: "https://www.reddit.com", tier: "social" },
+  { label: "YouTube", url: "https://www.youtube.com", tier: "social" },
+  { label: "LinkedIn", url: "https://www.linkedin.com", tier: "social" },
+  { label: "Bluesky", url: "https://bsky.app", tier: "social" },
+  { label: "Mastodon", url: "https://mastodon.social", tier: "social" },
+  { label: "Threads", url: "https://www.threads.net", tier: "social" },
+  // Content Hosting & Dev
+  { label: "GitHub", url: "https://github.com", tier: "content" },
+  { label: "Medium", url: "https://medium.com", tier: "content" },
+  { label: "Substack", url: "https://substack.com", tier: "content" },
+  { label: "Notion", url: "https://www.notion.so", tier: "content" },
+  { label: "GitLab", url: "https://gitlab.com", tier: "content" },
+  { label: "StackOverflow", url: "https://stackoverflow.com", tier: "content" },
+  // Fact-Checking
+  { label: "Snopes", url: "https://www.snopes.com", tier: "news" },
+  { label: "PolitiFact", url: "https://www.politifact.com", tier: "news" },
+  { label: "FactCheck.org", url: "https://www.factcheck.org", tier: "news" },
+  { label: "Full Fact", url: "https://fullfact.org", tier: "news" },
 ];
 
 const CATEGORY_OPTIONS = CATEGORIES.map((c) => {
@@ -240,25 +286,55 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             Must start with https:// — or leave empty to skip
           </p>
         )}
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[0.6rem] text-ink-ghost">Quick add:</span>
-          {SUGGESTED_SOURCES.map((src) => (
-            <button
-              key={src.label}
-              type="button"
-              onClick={() => {
-                setUrl(src.url);
-                setTouched(true);
-              }}
-              className={`rounded-full border px-2.5 py-0.5 font-mono text-[0.6rem] transition-colors ${
-                url === src.url
-                  ? "border-signal bg-signal-dim text-signal"
-                  : "border-line text-ink-dim hover:border-signal/40 hover:text-signal"
-              }`}
-            >
-              {src.label}
-            </button>
-          ))}
+        <div className="mt-2.5">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="font-mono text-[0.6rem] text-ink-ghost">Quick add source:</span>
+            <span className="font-mono text-[0.55rem] text-ink-ghost">click to set as primary URL</span>
+          </div>
+          <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-line bg-surface-2 p-2 scrollbar-thin">
+            {/* News & Fact-Checking */}
+            <SourceGroup
+              label="News & Fact-Checking"
+              sources={SUGGESTED_SOURCES.filter((s) => s.tier === "news")}
+              activeUrl={url}
+              onSelect={(u) => { setUrl(u); setTouched(true); }}
+            />
+            {/* Government & Institutional */}
+            <SourceGroup
+              label="Government & Institutional"
+              sources={SUGGESTED_SOURCES.filter((s) => s.tier === "gov")}
+              activeUrl={url}
+              onSelect={(u) => { setUrl(u); setTouched(true); }}
+            />
+            {/* Science & Research */}
+            <SourceGroup
+              label="Science & Research"
+              sources={SUGGESTED_SOURCES.filter((s) => s.tier === "science")}
+              activeUrl={url}
+              onSelect={(u) => { setUrl(u); setTouched(true); }}
+            />
+            {/* Social Media */}
+            <SourceGroup
+              label="Social Media"
+              sources={SUGGESTED_SOURCES.filter((s) => s.tier === "social")}
+              activeUrl={url}
+              onSelect={(u) => { setUrl(u); setTouched(true); }}
+            />
+            {/* Content & Dev Platforms */}
+            <SourceGroup
+              label="Content & Dev Platforms"
+              sources={SUGGESTED_SOURCES.filter((s) => s.tier === "content")}
+              activeUrl={url}
+              onSelect={(u) => { setUrl(u); setTouched(true); }}
+            />
+            {/* Encyclopedia */}
+            <SourceGroup
+              label="Knowledge Base"
+              sources={SUGGESTED_SOURCES.filter((s) => s.tier === "encyclopedia")}
+              activeUrl={url}
+              onSelect={(u) => { setUrl(u); setTouched(true); }}
+            />
+          </div>
         </div>
         <p className="mt-2 text-xs leading-relaxed text-ink-ghost">
           {mode === "SOURCE_VERIFIED"
@@ -384,5 +460,51 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         </span>
       </div>
     </form>
+  );
+}
+
+const TIER_DOT_COLORS: Record<string, string> = {
+  gov: "bg-signal",
+  encyclopedia: "bg-signal",
+  news: "bg-pending",
+  science: "bg-pending",
+  social: "bg-warn",
+  content: "bg-mute",
+};
+
+function SourceGroup({
+  label,
+  sources,
+  activeUrl,
+  onSelect,
+}: {
+  label: string;
+  sources: { label: string; url: string; tier: string }[];
+  activeUrl: string;
+  onSelect: (url: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1 font-mono text-[0.5rem] uppercase tracking-wider text-ink-ghost">
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-1">
+        {sources.map((src) => (
+          <button
+            key={src.label}
+            type="button"
+            onClick={() => onSelect(src.url)}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[0.6rem] transition-colors ${
+              activeUrl === src.url
+                ? "border-signal bg-signal-dim text-signal"
+                : "border-line text-ink-dim hover:border-signal/40 hover:text-signal"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${TIER_DOT_COLORS[src.tier] ?? "bg-mute"}`} />
+            {src.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

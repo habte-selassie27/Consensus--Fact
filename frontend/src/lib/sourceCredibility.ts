@@ -13,50 +13,50 @@ export interface Credibility {
 }
 
 const AUTHORITATIVE_DOMAINS = new Set([
-  "gov",
-  "edu",
-  "wikipedia.org",
-  "bbc.com",
-  "bbc.co.uk",
-  "reuters.com",
-  "apnews.com",
-  "nature.com",
-  "science.org",
-  "nasa.gov",
-  "who.int",
-  "nih.gov",
-  "cdc.gov",
-  "un.org",
-  "britannica.com",
-  "smithsonianmag.com",
-  "nationalgeographic.com",
-  "pesna.org",
+  // Government & Institutional
+  "gov", "edu", "ac",
+  "wikipedia.org", "britannica.com",
+  "nasa.gov", "nih.gov", "cdc.gov", "fda.gov", "noaa.gov", "nsf.gov", "defense.gov", "state.gov",
+  "who.int", "un.org", "worldbank.org", "imf.org", "iaea.org", "icao.int",
+  "europa.eu", "consilium.europa.eu", "ec.europa.eu",
+  "gov.uk", "canada.ca", "australia.gov.au", "gov.in", "gov.br",
+  // News & Wire Services
+  "bbc.com", "bbc.co.uk", "reuters.com", "apnews.com", "ap.org", "afp.com",
+  // Science & Research
+  "nature.com", "science.org", "pubmed.ncbi.nlm.nih.gov", "sciencedirect.com",
+  "arxiv.org", "biorxiv.org", "medrxiv.org", "springer.com", "wiley.com",
+  "smithsonianmag.com", "nationalgeographic.com", "pesna.org",
 ]);
 
 const CREDIBLE_DOMAINS = new Set([
-  "nytimes.com",
-  "theguardian.com",
-  "wsj.com",
-  "ft.com",
-  "economist.com",
-  "afp.com",
-  "bloomberg.com",
-  "washingtonpost.com",
-  "theatlantic.com",
-  "newyorker.com",
-  "africanews.com",
-  "aljazeera.com",
-  "dw.com",
-  "france24.com",
-  "cnn.com",
-  "npr.org",
-  "pbs.org",
-  "ap.org",
-  "statnews.com",
-  "scientificamerican.com",
+  // Major Newspapers
+  "nytimes.com", "washingtonpost.com", "wsj.com", "ft.com", "economist.com",
+  "theguardian.com", "theatlantic.com", "newyorker.com", "bloomberg.com",
+  "politico.com", "thehill.com", "axios.com", "vox.com", "vice.com",
+  // Broadcast & Wire
+  "cnn.com", "npr.org", "pbs.org", "cbc.ca", "abc.net.au",
+  "aljazeera.com", "dw.com", "france24.com", "africanews.com",
+  // Tech & Science
+  "techcrunch.com", "arstechnica.com", "wired.com", "theverge.com",
+  "mittechreview.com", "scientificamerican.com", "statnews.com",
+  "arstechnica.com", "ieee.org", "acm.org",
+  // Fact-Checking
+  "snopes.com", "politifact.com", "factcheck.org", "fullfact.org",
+  "africacheck.org", "leadstories.com",
+  // Research & Academic
+  "scholar.google.com", "researchgate.net", "academia.edu",
+  // Platforms & Content
+  "github.com", "stackoverflow.com", "gitlab.com",
+  "medium.com", "substack.com",
 ]);
 
-const UNRELIABLE_HINTS = ["blogspot.", "wordpress.", "medium.com/@" , "facebook.com", "tiktok.com", "instagram.com"];
+const UNRELIABLE_HINTS = [
+  "blogspot.", "wordpress.com/@", "medium.com/@",
+  "facebook.com", "tiktok.com", "instagram.com",
+  "4chan.org", "8kun.top", "bitchute.com", "rumble.com",
+  "naturalnews.com", "infowars.com", "breitbart.com",
+  "dailymail.co.uk", "mirror.co.uk",
+];
 
 function hostFromUrl(url: string): string {
   try {
