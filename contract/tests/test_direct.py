@@ -109,8 +109,10 @@ class _FakeGL(types.SimpleNamespace):
         self.eq_principle = types.SimpleNamespace(
             prompt_comparative=fake_prompt_comparative
         )
-        self.nondet = types.SimpleNamespace(exec_prompt=MagicMock(name="exec_prompt"))
-        self.get_webpage = MagicMock(name="get_webpage")
+        self.nondet = types.SimpleNamespace(
+            exec_prompt=MagicMock(name="exec_prompt"),
+            web=types.SimpleNamespace(render=MagicMock(name="web_render")),
+        )
 
 
 def _build_fake_genlayer():
@@ -166,8 +168,8 @@ def verdict_json(verdict, confidence=95, explanation="Sources confirm the claim.
 
 @pytest.fixture()
 def web():
-    """Mocked gl.get_webpage; default: primary + any https URL succeeds."""
-    mock = MagicMock(name="get_webpage")
+    """Mocked gl.nondet.web.render; default: primary + any https URL succeeds."""
+    mock = MagicMock(name="web_render")
 
     def side_effect(url, mode="text"):
         if url == PRIMARY_URL:
@@ -177,7 +179,7 @@ def web():
         raise RuntimeError(f"unreachable url: {url}")
 
     mock.side_effect = side_effect
-    FAKE_GL.get_webpage = mock
+    FAKE_GL.nondet.web.render = mock
     yield mock
 
 

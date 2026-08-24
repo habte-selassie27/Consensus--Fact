@@ -374,7 +374,7 @@ class FactChecker(gl.Contract):
         # Fetch all primary sources
         for url in primary_urls:
             try:
-                content = str(gl.get_webpage(url, mode="text")).strip()
+                content = str(gl.nondet.web.render(url, mode="text")).strip()
                 if len(content) == 0:
                     failed_count += 1
                     source_statuses[url] = STATUS_EMPTY
@@ -416,7 +416,7 @@ class FactChecker(gl.Contract):
         # Fetch corroborating sources (cap at 3 total)
         for url in all_corroborating[:NUM_CORROBORATING_SOURCES]:
             try:
-                content = str(gl.get_webpage(url, mode="text")).strip()
+                content = str(gl.nondet.web.render(url, mode="text")).strip()
                 if len(content) == 0:
                     failed_count += 1
                     source_statuses[url] = STATUS_EMPTY
