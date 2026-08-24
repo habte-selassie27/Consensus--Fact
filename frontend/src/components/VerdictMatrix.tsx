@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from "framer-motion";
 import { BarChart3 } from "lucide-react";
 import type { FactCheckRecord } from "@/lib/types";
 import { getCredibility } from "@/lib/sourceCredibility";
@@ -31,9 +30,6 @@ function toneClass(tone: Dimension["tone"]): string {
 }
 
 export default function VerdictMatrix({ record }: VerdictMatrixProps) {
-  const reduceMotion = useReducedMotion();
-  const delay = (ms: number) => (reduceMotion ? 0 : ms);
-
   const proof = loadTxProof(record.id);
   const isKB = record.verification_mode === "KNOWLEDGE_BASED";
 
@@ -126,11 +122,8 @@ export default function VerdictMatrix({ record }: VerdictMatrixProps) {
   ];
 
   return (
-    <motion.section
+    <section
       aria-label="Claim analysis"
-      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay(0.4), duration: 0.45 }}
       className="rounded-xl border border-line bg-surface p-6 shadow-card"
     >
       <div className="mb-4 flex items-center gap-2">
@@ -155,15 +148,9 @@ export default function VerdictMatrix({ record }: VerdictMatrixProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-line-dim">
-            {dimensions.map((dim, i) => (
-              <motion.tr
+            {dimensions.map((dim) => (
+              <tr
                 key={dim.label}
-                initial={reduceMotion ? false : { opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{
-                  delay: delay(300 + i * 60),
-                  duration: 0.2,
-                }}
                 className="transition-colors hover:bg-line-dim/30"
               >
                 <td className="px-4 py-2.5 font-mono text-xs text-ink-dim">
@@ -172,11 +159,11 @@ export default function VerdictMatrix({ record }: VerdictMatrixProps) {
                 <td className={`px-4 py-2.5 text-right font-mono text-xs font-semibold ${toneClass(dim.tone)}`}>
                   {dim.value}
                 </td>
-              </motion.tr>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </motion.section>
+    </section>
   );
 }

@@ -1,4 +1,3 @@
-import { motion, useReducedMotion } from "framer-motion";
 import {
   Send,
   Globe,
@@ -26,9 +25,6 @@ function formatTime(ts: number, offsetSec: number = 0): string {
 }
 
 export default function VerdictTimeline({ record }: VerdictTimelineProps) {
-  const reduceMotion = useReducedMotion();
-  const delay = (ms: number) => (reduceMotion ? 0 : ms);
-
   const isKB = record.verification_mode === "KNOWLEDGE_BASED";
   const sourceCount = record.sources_checked.length;
   const verdictLabel =
@@ -111,11 +107,8 @@ export default function VerdictTimeline({ record }: VerdictTimelineProps) {
   ];
 
   return (
-    <motion.section
+    <section
       aria-label="Verification timeline"
-      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay(0.5), duration: 0.45 }}
       className="rounded-xl border border-line bg-surface p-6 shadow-card"
     >
       <h2 className="mb-5 font-display text-sm font-semibold tracking-wide text-ink">
@@ -127,14 +120,8 @@ export default function VerdictTimeline({ record }: VerdictTimelineProps) {
           const Icon = step.icon;
           const isLast = i === steps.length - 1;
           return (
-            <motion.div
+            <div
               key={`${step.label}-${i}`}
-              initial={reduceMotion ? false : { opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{
-                delay: delay(600 + i * 80),
-                duration: 0.25,
-              }}
               className="relative flex gap-4"
             >
               {/* Vertical connector line */}
@@ -177,10 +164,10 @@ export default function VerdictTimeline({ record }: VerdictTimelineProps) {
                   {step.detail}
                 </p>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
-    </motion.section>
+    </section>
   );
 }
