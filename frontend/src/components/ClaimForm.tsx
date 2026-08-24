@@ -7,9 +7,10 @@ import {
   CheckCircle2,
   XCircle,
   Shield,
-  Zap,
   Globe,
   Brain,
+  ShieldCheck,
+  Lock,
 } from "lucide-react";
 import { CATEGORIES, inferCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
@@ -273,10 +274,11 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-void/30 border-t-void" />
             Verifying on-chain...
           </span>
-        ) : mode === "SOURCE_VERIFIED" ? (
-          "Verify with source →"
         ) : (
-          "Verify from knowledge →"
+          <span className="flex items-center gap-2">
+            <Lock size={14} />
+            Verify on TruthLock
+          </span>
         )}
       </button>
 
@@ -284,15 +286,18 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
         Ctrl+Enter to submit
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-4">
-        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
-          <Shield size={10} /> On-chain
+      <div className="mt-5 flex items-center justify-center gap-3">
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.6rem] text-ink-ghost">
+          <Globe size={10} /> Live Web
         </span>
-        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
-          <Zap size={10} /> ~30s
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.6rem] text-ink-ghost">
+          <Brain size={10} /> AI Reasoning
         </span>
-        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.65rem] text-ink-ghost">
-          <Globe size={10} /> {mode === "SOURCE_VERIFIED" ? "3 sources" : "AI knowledge"}
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.6rem] text-ink-ghost">
+          <ShieldCheck size={10} /> Consensus
+        </span>
+        <span className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[0.6rem] text-ink-ghost">
+          <Shield size={10} /> Onchain
         </span>
       </div>
     </form>

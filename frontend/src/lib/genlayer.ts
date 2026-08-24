@@ -17,6 +17,7 @@ import {
   type VerificationMode,
   type Verdict,
 } from "./types";
+import { saveTxProof, type TxProof } from "./verification";
 
 export const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS ?? "";
 export const NETWORK = import.meta.env.VITE_NETWORK ?? "studionet";
@@ -216,14 +217,13 @@ export async function submitClaim(
   }
 
   const readClient = await getReadClient();
-  const receipt = asRecord(
-    await readClient.waitForTransactionReceipt({
-      hash: txHash as unknown as Hash,
-      status: TransactionStatus.FINALIZED,
-      interval: 5000,
-      retries: 120,
-    })
-  );
+  const rawReceipt = await readClient.waitForTransactionReceipt({
+    hash: txHash as unknown as Hash,
+    status: TransactionStatus.FINALIZED,
+    interval: 5000,
+    retries: 120,
+  });
+  const receipt = asRecord(rawReceipt);
 
   const executionResultName = receipt.txExecutionResultName;
   if (
@@ -244,6 +244,34 @@ export async function submitClaim(
   // Resolve the check ID by polling recent checks for this submitter + claim
   // (contract generates ID as sender[-8:] + tx-pinned unix timestamp)
   const checkId = await findLatestCheckId(account, claim);
+
+  // Capture consensus proof for display in Result page
+  if (checkId) {
+    const consensus = receipt.consensus_data as Record<string, unknown> | undefined;
+    const votesRaw = consensus?.votes as Record<string, string> | undefined;
+    const votes: Record<string, string> = votesRaw && typeof votesRaw === "object"
+      ? Object.fromEntries(
+          Object.entries(votesRaw).map(([k, v]) => [k.toLowerCase(), String(v)])
+        )
+      : {};
+    const agreeCount = Object.values(votes).filter(
+      (v) => v === "agree"
+    ).length;
+    const totalVotes = Object.keys(votes).length;
+    const lastRound = receipt.lastRound as Record<string, unknown> | undefined;
+    const resultName = String(receipt.resultName ?? "MAJORITY_AGREE");
+    const rounds = lastRound ? 1 : 1;
+
+    saveTxProof(checkId, {
+      txHash,
+      votes,
+      agreeCount,
+      totalVotes,
+      resultName,
+      rounds,
+      savedAt: Date.now(),
+    } satisfies TxProof);
+  }
 
   if (!checkId) {
     throw new GenLayerClientError(

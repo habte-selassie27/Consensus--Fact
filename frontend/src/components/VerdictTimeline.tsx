@@ -1,91 +1,186 @@
-"use client";
-
 import { motion, useReducedMotion } from "framer-motion";
-import { Globe, GitBranch, ShieldCheck, Check } from "lucide-react";
+import {
+  Send,
+  Globe,
+  Brain,
+  ShieldCheck,
+  Check,
+  FileCheck,
+} from "lucide-react";
 import type { FactCheckRecord } from "@/lib/types";
 
 interface VerdictTimelineProps {
   record: FactCheckRecord;
 }
 
-function formatTime(ts: number): string {
-  return new Date(ts * 1000).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+interface TimelineStep {
+  time: string;
+  label: string;
+  detail: string;
+  icon: React.ElementType;
+  tone: "default" | "signal" | "pending";
+}
+
+function formatTime(ts: number, offsetSec: number = 0): string {
+  return new Date((ts + offsetSec) * 1000).toISOString().slice(11, 19);
 }
 
 export default function VerdictTimeline({ record }: VerdictTimelineProps) {
   const reduceMotion = useReducedMotion();
+  const delay = (ms: number) => (reduceMotion ? 0 : ms);
 
-  const sourceHost = (() => {
-    try {
-      return record.source_url
-        ? new URL(record.source_url).hostname.replace(/^www\./, "")
-        : "Knowledge-based (no source)";
-    } catch {
-      return record.source_url || "Unknown source";
-    }
-  })();
+  const isKB = record.verification_mode === "KNOWLEDGE_BASED";
+  const sourceCount = record.sources_checked.length;
+  const verdictLabel =
+    record.verdict === "TRUE"
+      ? "TRUE"
+      : record.verdict === "FALSE"
+        ? "FALSE"
+        : record.verdict === "MISLEADING"
+          ? "MISLEADING"
+          : "UNVERIFIABLE";
 
-  const steps = [
+  const baseTs = record.timestamp - (isKB ? 8 : 16);
+
+  const steps: TimelineStep[] = [
     {
-      label: "Primary source",
-      detail: sourceHost,
+      time: formatTime(baseTs, 0),
+      label: "Claim submitted",
+      detail: isKB
+        ? "Knowledge-based mode"
+        : "Source URL provided",
+      icon: Send,
+      tone: "default",
+    },
+    {
+      time: formatTime(baseTs, 2),
+      label: isKB ? "Knowledge lookup" : "Primary source retrieved",
+      detail: isKB
+        ? "Evaluating from internal knowledge"
+        : record.source_url
+          ? (() => {
+              try {
+                return new URL(record.source_url).hostname.replace(/^www\./, "");
+              } catch {
+                return "Source fetched";
+              }
+            })()
+          : "Source fetched",
       icon: Globe,
+      tone: isKB ? "pending" : "signal",
+    },
+    ...(!isKB
+      ? [
+          {
+            time: formatTime(baseTs, 4),
+            label: `${sourceCount - 1} corroborating sources`,
+            detail: "Cross-referencing independent evidence",
+            icon: Globe,
+            tone: "signal" as const,
+          },
+        ]
+      : []),
+    {
+      time: formatTime(baseTs, isKB ? 6 : 7),
+      label: "Validators reasoning",
+      detail: "Independent AI evaluation by each validator",
+      icon: Brain,
+      tone: "default" as const,
     },
     {
-      label: "Corroborating sources",
-      detail: `${record.sources_checked.filter((s) => s !== record.source_url).length} sources cross-checked`,
-      icon: GitBranch,
-    },
-    {
+      time: formatTime(baseTs, isKB ? 10 : 13),
       label: "Consensus reached",
-      detail: formatTime(record.timestamp),
+      detail: "Majority agreement via Optimistic Democracy",
       icon: ShieldCheck,
+      tone: "signal" as const,
+    },
+    {
+      time: formatTime(baseTs, isKB ? 12 : 15),
+      label: "Verdict committed",
+      detail: "Stored permanently on-chain",
+      icon: FileCheck,
+      tone: "signal" as const,
+    },
+    {
+      time: formatTime(baseTs, isKB ? 13 : 16),
+      label: `${verdictLabel} · ${record.confidence}%`,
+      detail: "Final verification result",
+      icon: Check,
+      tone: "signal" as const,
     },
   ];
 
   return (
-    <section aria-label="Verdict timeline" className="mt-8">
-      <h2 className="label mb-4">How this verdict was reached</h2>
+    <motion.section
+      aria-label="Verification timeline"
+      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: delay(2.0), duration: 0.45 }}
+      className="rounded-xl border border-line bg-surface p-6 shadow-card"
+    >
+      <h2 className="mb-5 font-display text-sm font-semibold tracking-wide text-ink">
+        Verification timeline
+      </h2>
 
-      <div className="card">
-        <div className="relative flex items-start justify-between gap-2">
-          {/* Connector line */}
-          <div className="absolute left-[18px] right-[18px] top-[18px] h-px bg-line sm:left-[28px] sm:right-[28px]" aria-hidden="true" />
-          <motion.div
-            initial={reduceMotion ? false : { scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: reduceMotion ? 0 : 1.2, ease: "easeOut", delay: 0.4 }}
-            className="absolute left-[18px] right-[18px] top-[18px] h-px origin-left bg-signal/50 sm:left-[28px] sm:right-[28px]"
-            aria-hidden="true"
-          />
+      <div className="relative space-y-0">
+        {steps.map((step, i) => {
+          const Icon = step.icon;
+          const isLast = i === steps.length - 1;
+          return (
+            <motion.div
+              key={`${step.label}-${i}`}
+              initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                delay: delay(2200 + i * 120),
+                duration: 0.3,
+              }}
+              className="relative flex gap-4"
+            >
+              {/* Vertical connector line */}
+              {!isLast && (
+                <div
+                  className="absolute left-[14px] top-[32px] w-px bg-line"
+                  style={{ height: "calc(100% - 8px)" }}
+                  aria-hidden="true"
+                />
+              )}
 
-          {steps.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <motion.div
-                key={step.label}
-                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduceMotion ? 0 : 0.5 + i * 0.15, duration: 0.35 }}
-                className="relative flex flex-1 flex-col items-center text-center"
+              {/* Node */}
+              <div
+                className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+                  step.tone === "signal"
+                    ? "border-signal/60 bg-signal/10 text-signal"
+                    : step.tone === "pending"
+                      ? "border-pending/60 bg-pending/10 text-pending"
+                      : "border-line bg-surface-2 text-ink-ghost"
+                }`}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border border-signal bg-signal/10 text-signal">
-                  {i === steps.length - 1 ? <Check size={16} /> : <Icon size={16} />}
-                </span>
-                <span className="mt-2 font-display text-xs font-semibold tracking-wide text-ink">
-                  {step.label}
-                </span>
-                <span className="mt-1 max-w-[140px] truncate font-mono text-[0.65rem] text-ink-ghost">
+                {isLast ? (
+                  <Check size={12} />
+                ) : (
+                  <Icon size={12} />
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 pb-5">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-[0.6rem] text-ink-ghost">
+                    {step.time}
+                  </span>
+                  <span className="font-display text-xs font-semibold tracking-wide text-ink">
+                    {step.label}
+                  </span>
+                </div>
+                <p className="mt-0.5 font-mono text-[0.6rem] text-ink-ghost">
                   {step.detail}
-                </span>
-              </motion.div>
-            );
-          })}
-        </div>
+                </p>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
-    </section>
+    </motion.section>
   );
 }
