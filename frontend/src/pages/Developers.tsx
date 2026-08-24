@@ -213,8 +213,8 @@ export default function Developers() {
       </motion.section>
 
       {/* Integration code */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        {/* Left: Code tabs */}
+      <div className="space-y-6">
+        {/* Code tabs */}
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -265,7 +265,7 @@ export default function Developers() {
           </div>
         </motion.section>
 
-        {/* Right: API playground */}
+        {/* API playground */}
         <motion.section
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
