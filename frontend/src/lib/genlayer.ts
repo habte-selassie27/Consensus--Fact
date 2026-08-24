@@ -220,6 +220,8 @@ export async function submitClaim(
     await readClient.waitForTransactionReceipt({
       hash: txHash as unknown as Hash,
       status: TransactionStatus.FINALIZED,
+      interval: 5000,
+      retries: 120,
     })
   );
 
