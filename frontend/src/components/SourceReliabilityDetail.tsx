@@ -126,6 +126,14 @@ export default function SourceReliabilityDetail({
     Unreliable: "text-danger",
   };
 
+  const hasData = analytics.length > 0;
+  const sourceVerifiedCount = records.filter(
+    (r) => r.verification_mode === "SOURCE_VERIFIED"
+  ).length;
+  const knowledgeCount = records.filter(
+    (r) => r.verification_mode === "KNOWLEDGE_BASED"
+  ).length;
+
   return (
     <motion.section
       aria-label="Source reliability analytics"
@@ -141,42 +149,71 @@ export default function SourceReliabilityDetail({
         </h2>
       </div>
 
+      {/* Mode summary */}
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        <div className="rounded-lg bg-surface-2 px-3 py-3">
+          <p className="font-mono text-[0.55rem] uppercase tracking-wider text-ink-ghost">
+            Source-verified
+          </p>
+          <p className="mt-1 font-display text-xl font-bold text-signal">
+            {sourceVerifiedCount}
+          </p>
+        </div>
+        <div className="rounded-lg bg-surface-2 px-3 py-3">
+          <p className="font-mono text-[0.55rem] uppercase tracking-wider text-ink-ghost">
+            Knowledge-based
+          </p>
+          <p className="mt-1 font-display text-xl font-bold text-pending">
+            {knowledgeCount}
+          </p>
+        </div>
+      </div>
+
       {/* Tier distribution */}
       <div className="mb-6">
         <p className="mb-3 font-mono text-[0.6rem] uppercase tracking-wider text-ink-ghost">
           Quality tier distribution
         </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {tiers.map((t, i) => (
-            <motion.div
-              key={t.tier}
-              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: delay(200 + i * 80), duration: 0.3 }}
-              className="rounded-lg bg-surface-2 px-3 py-3"
-            >
-              <p
-                className={`font-display text-xs font-semibold ${tierColors[t.tier] ?? "text-ink-ghost"}`}
+        {hasData ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {tiers.map((t, i) => (
+              <motion.div
+                key={t.tier}
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: delay(200 + i * 80), duration: 0.3 }}
+                className="rounded-lg bg-surface-2 px-3 py-3"
               >
-                {t.tier}
-              </p>
-              <p className="mt-1 font-display text-xl font-bold text-ink">
-                {t.count}
-              </p>
-              <p className="mt-0.5 font-mono text-[0.55rem] text-ink-ghost">
-                Avg quality {t.avgScore}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+                <p
+                  className={`font-display text-xs font-semibold ${tierColors[t.tier] ?? "text-ink-ghost"}`}
+                >
+                  {t.tier}
+                </p>
+                <p className="mt-1 font-display text-xl font-bold text-ink">
+                  {t.count}
+                </p>
+                <p className="mt-0.5 font-mono text-[0.55rem] text-ink-ghost">
+                  Avg quality {t.avgScore}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg bg-surface-2 px-4 py-6 text-center">
+            <Globe size={20} className="mx-auto mb-2 text-ink-ghost" />
+            <p className="font-mono text-xs text-ink-ghost">
+              No source-verified checks yet. Submit a claim with a source URL to see domain analytics.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Domain breakdown */}
-      {analytics.length > 0 && (
-        <div>
-          <p className="mb-3 font-mono text-[0.6rem] uppercase tracking-wider text-ink-ghost">
-            Domain breakdown
-          </p>
+      <div>
+        <p className="mb-3 font-mono text-[0.6rem] uppercase tracking-wider text-ink-ghost">
+          Domain breakdown
+        </p>
+        {analytics.length > 0 ? (
           <div className="overflow-hidden rounded-lg border border-line">
             <table className="w-full text-left">
               <thead>
@@ -240,8 +277,14 @@ export default function SourceReliabilityDetail({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-lg border border-line bg-surface-2 px-4 py-6 text-center">
+            <p className="font-mono text-xs text-ink-ghost">
+              Domain data will appear once source-verified checks are completed.
+            </p>
+          </div>
+        )}
+      </div>
 
       <p className="mt-4 font-mono text-[0.6rem] text-ink-ghost">
         Quality scores reflect historical agreement with TruthLock verification
