@@ -258,7 +258,7 @@ export default function Developers() {
           </div>
 
           {/* Code block */}
-          <div className="overflow-auto p-4">
+          <div className="overflow-x-auto p-4">
             <pre className="font-mono text-[0.7rem] leading-relaxed text-ink-dim">
               <code>{code}</code>
             </pre>
