@@ -10,6 +10,7 @@ import HowItWorks from "@/components/HowItWorks";
 import TrustLayers from "@/components/TrustLayers";
 import UseCases from "@/components/UseCases";
 import VerificationSpotlight from "@/components/VerificationSpotlight";
+import ValidatorProgress from "@/components/ValidatorProgress";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { saveCategory } from "@/lib/categories";
 import type { Category } from "@/lib/categories";
@@ -183,32 +184,11 @@ export default function Home() {
                   onSubmit={handleSubmit}
                   isLoading={status === "pending" || status === "confirming"}
                 />
-                {status !== "idle" && (
-                  <div className="mt-4 rounded-lg border border-line bg-surface p-4">
-                    <div className="flex items-center gap-3">
-                      {status === "pending" && (
-                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-signal/30 border-t-signal" />
-                      )}
-                      {status === "confirming" && (
-                        <span className="h-3 w-3 animate-pulse rounded-full bg-signal" />
-                      )}
-                      {status === "done" && (
-                        <span className="h-3 w-3 rounded-full bg-signal" />
-                      )}
-                      {status === "error" && (
-                        <span className="h-3 w-3 rounded-full bg-danger" />
-                      )}
-                      <span className="font-mono text-xs text-ink-dim">
-                        {status === "pending" &&
-                          "Submitting claim to the verification network..."}
-                        {status === "confirming" &&
-                          "Validators processing..."}
-                        {status === "done" && "Redirecting to result..."}
-                        {status === "error" && errorMessage}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <ValidatorProgress
+                  status={status}
+                  txHash={txHash}
+                  errorMessage={errorMessage}
+                />
               </>
             ) : (
               <BatchClaimForm onSubmitAll={() => {}} />
