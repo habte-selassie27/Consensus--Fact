@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import CategoryBadge from "@/components/CategoryBadge";
 import ChallengePanel from "@/components/ChallengePanel";
 import ConfidenceRing from "@/components/ConfidenceRing";
+import ContradictionPanel from "@/components/ContradictionPanel";
 import EvidencePanel from "@/components/EvidencePanel";
 import ExportReportButton from "@/components/ExportReportButton";
 import OnchainProof from "@/components/OnchainProof";
@@ -160,6 +161,11 @@ export default function Result() {
       {/* EVIDENCE */}
       <div className="mt-8">
         <EvidencePanel record={record} />
+      </div>
+
+      {/* CONTRADICTION / EVIDENCE DIVERGENCE */}
+      <div className="mt-8">
+        <ContradictionPanel record={record} />
       </div>
 
       {/* CONSENSUS */}
