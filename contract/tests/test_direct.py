@@ -198,8 +198,12 @@ def llm():
 
 @pytest.fixture()
 def fc(web, llm):
+    import time as _time_mod
     EQUIVALENCE_CALLS.clear()
     _mock_time.return_value = 1755948000
+    _time_mod.time = _mock_time
+    FAKE_GL.message.sender_address = FAKE_SENDER
+    FAKE_GL.message.sender = FAKE_SENDER
     yield FactChecker()
 
 

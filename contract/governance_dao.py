@@ -63,7 +63,7 @@ class Proposal:
     proposer: str                  # wallet address
     truthlock_check_id: str        # reference to TruthLock verification
     truthlock_verdict: str         # cached verdict from TruthLock
-    truthlock_confidence: int      # cached confidence
+    truthlock_confidence: bigint   # cached confidence
     status: str                    # PENDING | VERIFIED | DISPUTED | UNVERIFIABLE | EXECUTED
     votes_for: bigint              # number of votes in favor
     votes_against: bigint          # number of votes against
@@ -100,21 +100,31 @@ class GovernanceDAO(gl.Contract):
     # ------------------------------------------------------------------
 
     @gl.public.write
-    def initialize(self, truthlock_address: str) -> str:
+    def initialize(self, truthlock_address) -> str:
         """Set the TruthLock contract address. Can only be called once."""
         if self.truthlock_address != "":
             raise gl.UserError("Already initialized")
-        if truthlock_address is None or truthlock_address.strip() == "":
+        # Handle both direct string and list-wrapped (CLI) args
+        if isinstance(truthlock_address, (list, tuple)) and len(truthlock_address) > 0:
+            truthlock_address = truthlock_address[0]
+        if not isinstance(truthlock_address, str):
+            truthlock_address = str(truthlock_address) if truthlock_address else ""
+        addr = truthlock_address.strip()
+        if addr == "":
             raise gl.UserError("TruthLock address required")
-        self.truthlock_address = truthlock_address.strip()
+        self.truthlock_address = addr
         return "initialized"
 
     @gl.public.write
-    def add_member(self, address: str) -> str:
+    def add_member(self, address) -> str:
         """Add a DAO member. In production, restrict to owner."""
-        if address is None or address.strip() == "":
-            raise gl.UserError("Address required")
+        if isinstance(address, (list, tuple)) and len(address) > 0:
+            address = address[0]
+        if not isinstance(address, str):
+            address = str(address) if address else ""
         addr = address.strip().lower()
+        if addr == "":
+            raise gl.UserError("Address required")
         if addr in self.members:
             raise gl.UserError("Already a member")
         self.members[addr] = True
@@ -153,7 +163,7 @@ class GovernanceDAO(gl.Contract):
         proposal = Proposal(
             id=proposal_id,
             title=title.strip(),
-            description=description.strip(),
+            description=description.strip() if description else "",
             proposer=str(gl.message.sender_address),
             truthlock_check_id=truthlock_check_id.strip(),
             truthlock_verdict=verdict,
@@ -300,7 +310,7 @@ class GovernanceDAO(gl.Contract):
             raise gl.UserError("Title must be non-empty")
         if len(title) > MAX_TITLE_LENGTH:
             raise gl.UserError("Title must be 200 characters or fewer")
-        if description is None:
+        if description is None or description.strip() == "":
             description = ""
         if len(description) > MAX_DESCRIPTION_LENGTH:
             raise gl.UserError("Description must be 1000 characters or fewer")

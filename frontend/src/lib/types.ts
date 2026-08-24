@@ -79,3 +79,46 @@ export const SOURCE_STATUS_LABELS: Record<SourceStatus, string> = {
   INVALID: "Invalid URL",
   ERROR: "Fetch error",
 };
+
+// ── Governance types ──────────────────────────────────────────────
+
+export const PROPOSAL_STATUSES = [
+  "PENDING",
+  "VERIFIED",
+  "DISPUTED",
+  "UNVERIFIABLE",
+  "EXECUTED",
+] as const;
+
+export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
+
+export interface GovernanceProposal {
+  id: string;
+  title: string;
+  description: string;
+  proposer: string;
+  truthlock_check_id: string;
+  truthlock_verdict: Verdict;
+  truthlock_confidence: number;
+  status: ProposalStatus;
+  votes_for: number;
+  votes_against: number;
+  total_voters: number;
+  timestamp: number;
+  executed_at: number;
+}
+
+export interface GovernanceStats {
+  total_proposals: number;
+  member_count: number;
+  statuses: Partial<Record<ProposalStatus, number>>;
+  truthlock_address: string;
+  min_confidence: number;
+}
+
+export function isProposalStatus(value: unknown): value is ProposalStatus {
+  return (
+    typeof value === "string" &&
+    (PROPOSAL_STATUSES as readonly string[]).includes(value)
+  );
+}
