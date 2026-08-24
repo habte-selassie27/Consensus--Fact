@@ -25,14 +25,16 @@ export interface FactCheckRecord {
   id: string;
   claim: string;
   source_url: string;
+  source_urls: string[];
   verdict: Verdict;
   confidence: number;
   explanation: string;
   sources_checked: string[];
-  timestamp: number;
-  submitter: string;
   verification_mode: VerificationMode;
   source_status: SourceStatus;
+  timestamp: number;
+  tx_hash?: string;
+  submitter: string;
 }
 
 export interface ContractStats {

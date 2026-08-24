@@ -11,6 +11,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import SourceReliabilityDetail from "@/components/SourceReliabilityDetail";
 import VerdictDonut from "@/components/VerdictDonut";
 import { verdictBadgeClass, VERDICT_DOT_CLASSES } from "@/components/verdictStyles";
 import { getRecentChecks, getStats } from "@/lib/genlayer";
@@ -356,6 +357,13 @@ export default function Stats() {
           </div>
         </motion.section>
       </div>
+
+      {/* Deep source reliability analytics */}
+      {recent.length > 0 && (
+        <div className="mt-6">
+          <SourceReliabilityDetail records={recent} />
+        </div>
+      )}
 
       {/* Live feed */}
       <motion.section

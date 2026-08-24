@@ -539,3 +539,107 @@ class TestKnowledgeBasedMode:
         # source is still recorded
         assert record["source_url"] == PRIMARY_URL
         assert record["sources_checked"] == [PRIMARY_URL]
+
+
+# ---------------------------------------------------------------------------
+# Multi-source tests
+# ---------------------------------------------------------------------------
+
+MULTI_URL_1 = "https://example.org/source-a"
+MULTI_URL_2 = "https://example.org/source-b"
+MULTI_URL_3 = "https://example.org/source-c"
+
+
+class TestMultiSource:
+    def test_multi_source_submit(self, fc, llm, web):
+        """submit_claim with source_urls list fetches all and evaluates."""
+        check_id = fc.submit_claim(
+            claim="Test claim",
+            source_urls=[MULTI_URL_1, MULTI_URL_2],
+        )
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["verdict"] in ("TRUE", "FALSE", "MISLEADING", "UNVERIFIABLE")
+        assert record["verification_mode"] == "SOURCE_VERIFIED"
+        assert record["source_url"] == MULTI_URL_1
+        assert len(record["sources_checked"]) >= 2
+
+    def test_multi_source_first_url_as_primary(self, fc, llm, web):
+        """source_url is set to the first URL in source_urls."""
+        check_id = fc.submit_claim(
+            claim="Test",
+            source_urls=[MULTI_URL_3, MULTI_URL_1],
+        )
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["source_url"] == MULTI_URL_3
+
+    def test_multi_source_deduplicates_urls(self, fc, llm, web):
+        """Duplicate URLs in source_urls are deduplicated."""
+        check_id = fc.submit_claim(
+            claim="Test",
+            source_urls=[MULTI_URL_1, MULTI_URL_1, MULTI_URL_2],
+        )
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["source_url"] == MULTI_URL_1
+        # sources_checked should not contain duplicates
+        assert len(record["sources_checked"]) == len(set(record["sources_checked"]))
+
+    def test_multi_source_partial_fetch_failure(self, fc, llm, web):
+        """When one primary source fails, pipeline continues with the rest."""
+        def selective_fetch(url, mode="text"):
+            if url == MULTI_URL_1:
+                raise RuntimeError("timeout")
+            return f"Content from {url}"
+
+        web.side_effect = selective_fetch
+        check_id = fc.submit_claim(
+            claim="Test",
+            source_urls=[MULTI_URL_1, MULTI_URL_2],
+        )
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["verdict"] in ("TRUE", "FALSE", "MISLEADING", "UNVERIFIABLE")
+        assert MULTI_URL_1 in record["sources_checked"]
+        assert MULTI_URL_2 in record["sources_checked"]
+
+    def test_multi_source_all_unreachable_falls_back(self, fc, llm, web):
+        """When all primary sources fail, falls back to knowledge-based."""
+        web.side_effect = RuntimeError("connection refused")
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("FALSE", 55, "Known false.")
+        check_id = fc.submit_claim(
+            claim="Test",
+            source_urls=[MULTI_URL_1, MULTI_URL_2],
+        )
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["verification_mode"] == "KNOWLEDGE_BASED"
+        assert record["source_status"] == "ERROR"
+
+    def test_multi_source_backward_compat_single_url(self, fc, llm):
+        """Passing source_url (not source_urls) still works."""
+        check_id = fc.submit_claim(
+            claim="Test",
+            source_url=PRIMARY_URL,
+        )
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["source_url"] == PRIMARY_URL
+        assert record["verification_mode"] == "SOURCE_VERIFIED"
+
+    def test_multi_source_empty_urls_triggers_knowledge(self, fc, llm):
+        """Empty source_urls + empty source_url → knowledge-based."""
+        check_id = fc.submit_claim(claim="Test", source_urls=[])
+        advance_block()
+        record = fc.get_check(check_id)
+        assert record["verification_mode"] == "KNOWLEDGE_BASED"
+
+    def test_multi_source_counted_in_stats(self, fc, llm):
+        """Multi-source checks increment total_checks."""
+        fc.submit_claim(claim="A", source_urls=[MULTI_URL_1])
+        advance_block()
+        fc.submit_claim(claim="B", source_urls=[MULTI_URL_1, MULTI_URL_2])
+        advance_block()
+        stats = fc.get_stats()
+        assert stats["total_checks"] == 2

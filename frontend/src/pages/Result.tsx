@@ -12,6 +12,7 @@ import ExportReportButton from "@/components/ExportReportButton";
 import OnchainProof from "@/components/OnchainProof";
 import ScanLine from "@/components/ScanLine";
 import ShareCardActions from "@/components/ShareCardActions";
+import SourceDiscovery from "@/components/SourceDiscovery";
 import ValidationCertificate from "@/components/ValidationCertificate";
 import ValidatorConsensus from "@/components/ValidatorConsensus";
 import VerdictCard from "@/components/VerdictCard";
@@ -161,6 +162,11 @@ export default function Result() {
       {/* EVIDENCE */}
       <div className="mt-8">
         <EvidencePanel record={record} />
+      </div>
+
+      {/* SOURCE DISCOVERY */}
+      <div className="mt-8">
+        <SourceDiscovery record={record} />
       </div>
 
       {/* CONTRADICTION / EVIDENCE DIVERGENCE */}

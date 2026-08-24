@@ -30,13 +30,18 @@ export default function Home() {
     retry: false,
   });
 
-  async function handleSubmit(claim: string, url: string, category: Category) {
+  async function handleSubmit(
+    claim: string,
+    url: string,
+    category: Category,
+    sourceUrls: string[] = []
+  ) {
     setStatus("pending");
     setTxHash(null);
     setErrorMessage(null);
 
     try {
-      const result = await submitClaim(claim, url);
+      const result = await submitClaim(claim, url, sourceUrls);
       saveCategory(result.checkId, category);
       setTxHash(result.txHash);
       setStatus("confirming");

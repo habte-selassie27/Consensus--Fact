@@ -157,6 +157,9 @@ function coerceRecord(value: unknown): FactCheckRecord {
     id: String(raw.id ?? ""),
     claim: String(raw.claim ?? ""),
     source_url: sourceUrl,
+    source_urls: Array.isArray(raw.sources_checked)
+      ? raw.sources_checked.filter((s: unknown) => s !== sourceUrl).map(String)
+      : [],
     verdict: coerceVerdict(raw.verdict),
     confidence: Number(raw.confidence ?? 0),
     explanation: String(raw.explanation ?? ""),
@@ -195,7 +198,8 @@ async function findLatestCheckId(
 
 export async function submitClaim(
   claim: string,
-  sourceUrl: string
+  sourceUrl: string,
+  sourceUrls: string[] = [],
 ): Promise<{ checkId: string; txHash: string }> {
   const address = requireContractAddress() as `0x${string}`;
   const account = await getWalletAccount();
@@ -203,10 +207,15 @@ export async function submitClaim(
   let txHash: string;
   try {
     const writeClient = await getWriteClient(account);
+    const filteredUrls = sourceUrls.filter((u) => u.trim() !== "");
+    const args =
+      filteredUrls.length > 0
+        ? [claim, "", filteredUrls]
+        : [claim, sourceUrl];
     txHash = await writeClient.writeContract({
       address,
       functionName: "submit_claim",
-      args: [claim, sourceUrl],
+      args,
       value: BigInt(0),
     });
   } catch (error) {

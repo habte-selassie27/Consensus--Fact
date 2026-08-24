@@ -218,21 +218,37 @@ class FactChecker(gl.Contract):
     # ------------------------------------------------------------------
 
     @gl.public.write
-    def submit_claim(self, claim: str, source_url: str = "") -> str:
-        """Submit a claim with an OPTIONAL source URL; returns the check ID.
+    def submit_claim(
+        self,
+        claim: str,
+        source_url: str = "",
+        source_urls: DynArray[str] = None,
+    ) -> str:
+        """Submit a claim with OPTIONAL source URL(s); returns the check ID.
 
-        source_url == "" triggers KNOWLEDGE_BASED verification.
-        A non-empty https:// URL triggers SOURCE_VERIFIED verification, with
-        automatic fallback to knowledge-based evaluation if fetching fails.
+        source_urls: array of URLs to cross-reference (primary multi-source mode).
+        source_url: single URL (backwards compatible; used if source_urls is empty).
+        Both empty → KNOWLEDGE_BASED verification.
         """
         self._validate_claim(claim)
-        source_url = self._normalize_source_url(source_url)
+
+        # Build the final list of primary source URLs
+        primary_urls: list[str] = []
+        if source_urls is not None and len(source_urls) > 0:
+            for url in source_urls:
+                normalized = self._normalize_source_url(url)
+                if normalized not in primary_urls:
+                    primary_urls.append(normalized)
+        else:
+            normalized = self._normalize_source_url(source_url)
+            if normalized:
+                primary_urls.append(normalized)
 
         # GenVM has no block number; use tx-pinned timestamp for uniqueness
         check_id = str(gl.message.sender_address)[-8:] + str(int(time.time()))
 
         def run():
-            return self._run_check_pipeline(claim, source_url)
+            return self._run_check_pipeline(claim, primary_urls)
 
         outcome = gl.eq_principle.prompt_comparative(
             run, principle=EQUIVALENCE_PRINCIPLE
@@ -246,11 +262,11 @@ class FactChecker(gl.Contract):
             explanation,
             mode,
             source_status,
-        ) = self._resolve_outcome(parsed, source_url)
+        ) = self._resolve_outcome(parsed, primary_urls)
         self._store_record(
             check_id=check_id,
             claim=claim,
-            source_url=source_url,
+            source_url=primary_urls[0] if primary_urls else "",
             verdict=verdict,
             confidence=confidence,
             explanation=explanation,
@@ -322,15 +338,17 @@ class FactChecker(gl.Contract):
             raise gl.UserError("Source URL must start with https://")
         return url
 
-    def _run_check_pipeline(self, claim: str, source_url: str) -> str:
+    def _run_check_pipeline(self, claim: str, primary_urls: list[str]) -> str:
         """Non-deterministic pipeline. Returns a JSON string comparable
         across validators.
 
-        - source_url == "": knowledge-based evaluation, no web fetch.
-        - fetch fails: falls back to knowledge-based with status 'unreachable'
+        - primary_urls empty: knowledge-based evaluation, no web fetch.
+        - All fetches fail: falls back to knowledge-based with 'unreachable'
           so the user still gets a verdict (never a bare 0% dead end).
+        - Multiple primary URLs: fetch all, extract corroborating from each,
+          cross-reference everything.
         """
-        if source_url == "":
+        if len(primary_urls) == 0:
             raw_result = self._evaluate_via_llm(
                 claim=claim,
                 contents=[],
@@ -348,15 +366,28 @@ class FactChecker(gl.Contract):
                 }
             )
 
-        try:
-            primary_content = gl.get_webpage(source_url, mode="text")
-            primary_text = str(primary_content).strip()
-            if len(primary_text) == 0:
-                raise Exception("empty content")
-            source_statuses = {source_url: STATUS_FETCHED}
-        except Exception as exc:
-            # Fallback: knowledge-based verdict instead of a dead UNVERIFIABLE
-            status = _classify_fetch_error(exc)
+        contents: list[str] = []
+        fetched_urls: list[str] = []
+        source_statuses: dict[str, str] = {}
+        failed_count = 0
+
+        # Fetch all primary sources
+        for url in primary_urls:
+            try:
+                content = str(gl.get_webpage(url, mode="text")).strip()
+                if len(content) == 0:
+                    failed_count += 1
+                    source_statuses[url] = STATUS_EMPTY
+                    continue
+                contents.append(content)
+                fetched_urls.append(url)
+                source_statuses[url] = STATUS_FETCHED
+            except Exception as exc:
+                failed_count += 1
+                source_statuses[url] = _classify_fetch_error(exc)
+
+        if len(contents) == 0:
+            # All primaries unreachable — knowledge-based fallback
             raw_result = self._evaluate_via_llm(
                 claim=claim,
                 contents=[],
@@ -367,20 +398,23 @@ class FactChecker(gl.Contract):
                 {
                     "status": "unreachable",
                     "mode": MODE_KNOWLEDGE_BASED,
-                    "sources": [source_url],
-                    "source_statuses": {source_url: status},
+                    "sources": primary_urls,
+                    "source_statuses": source_statuses,
                     "raw_result": raw_result if isinstance(raw_result, dict) else None,
-                    "failed_count": 0,
+                    "failed_count": failed_count,
                 }
             )
 
-        corroborating_urls = self._extract_corroborating_sources(primary_text)
+        # Extract corroborating sources from each primary
+        all_corroborating: list[str] = []
+        for primary_content in contents:
+            urls = self._extract_corroborating_sources(primary_content)
+            for u in urls:
+                if u not in all_corroborating and u not in fetched_urls:
+                    all_corroborating.append(u)
 
-        contents = [primary_text]
-        fetched_urls = [source_url]
-        failed_count = 0
-
-        for url in corroborating_urls[:NUM_CORROBORATING_SOURCES]:
+        # Fetch corroborating sources (cap at 3 total)
+        for url in all_corroborating[:NUM_CORROBORATING_SOURCES]:
             try:
                 content = str(gl.get_webpage(url, mode="text")).strip()
                 if len(content) == 0:
@@ -470,7 +504,7 @@ class FactChecker(gl.Contract):
             evidence_block=evidence_block,
         )
 
-    def _resolve_outcome(self, parsed, requested_source_url: str):
+    def _resolve_outcome(self, parsed, requested_source_urls: list[str]):
         """Deterministic post-processing of the pipeline output.
 
         Returns (sources, verdict, confidence, explanation, mode, source_status).
@@ -478,12 +512,12 @@ class FactChecker(gl.Contract):
         """
         if not isinstance(parsed, dict):
             return (
-                ([requested_source_url] if requested_source_url else []),
+                requested_source_urls[:],
                 VERDICT_UNVERIFIABLE,
                 0,
                 PIPELINE_FAILURE_EXPLANATION,
-                MODE_KNOWLEDGE_BASED if requested_source_url == "" else MODE_SOURCE_VERIFIED,
-                STATUS_NOT_PROVIDED if requested_source_url == "" else STATUS_ERROR,
+                MODE_KNOWLEDGE_BASED if len(requested_source_urls) == 0 else MODE_SOURCE_VERIFIED,
+                STATUS_NOT_PROVIDED if len(requested_source_urls) == 0 else STATUS_ERROR,
             )
 
         sources = []
@@ -504,13 +538,18 @@ class FactChecker(gl.Contract):
         if mode not in VALID_MODES:
             mode = (
                 MODE_SOURCE_VERIFIED
-                if requested_source_url != "" and parsed.get("status") == "ok"
+                if len(requested_source_urls) > 0 and parsed.get("status") == "ok"
                 else MODE_KNOWLEDGE_BASED
             )
 
+        # Primary status = first primary that has a status, or ERROR
         primary_status = STATUS_NOT_PROVIDED
-        if requested_source_url != "":
-            primary_status = statuses.get(requested_source_url, STATUS_ERROR)
+        for url in requested_source_urls:
+            if url in statuses:
+                primary_status = statuses[url]
+                break
+        if primary_status == STATUS_NOT_PROVIDED and len(requested_source_urls) > 0:
+            primary_status = STATUS_ERROR
 
         if parsed.get("status") == "unreachable":
             # Fetch failed — knowledge fallback verdict with clear labeling
@@ -518,8 +557,9 @@ class FactChecker(gl.Contract):
                 parsed.get("raw_result"),
                 fallback_explanation=KNOWLEDGE_FALLBACK_EXPLANATION,
             )
-            if requested_source_url not in sources:
-                sources.insert(0, requested_source_url)
+            for url in requested_source_urls:
+                if url not in sources:
+                    sources.insert(0, url)
             return (
                 sources,
                 verdict,
@@ -543,8 +583,10 @@ class FactChecker(gl.Contract):
             parsed.get("raw_result")
         )
 
-        if requested_source_url != "" and requested_source_url not in sources:
-            sources.insert(0, requested_source_url)
+        if requested_source_urls:
+            for url in requested_source_urls:
+                if url not in sources:
+                    sources.insert(0, url)
 
         failed_count = parsed.get("failed_count", 0)
         if isinstance(failed_count, int) and failed_count > 0:

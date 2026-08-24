@@ -19,7 +19,7 @@ import { verdictBadgeClass } from "@/components/verdictStyles";
 import CustomSelect from "@/components/CustomSelect";
 
 interface ClaimFormProps {
-  onSubmit: (claim: string, url: string, category: Category) => void;
+  onSubmit: (claim: string, url: string, category: Category, sourceUrls: string[]) => void;
   isLoading: boolean;
 }
 
@@ -51,6 +51,8 @@ const CATEGORY_OPTIONS = CATEGORIES.map((c) => {
 export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
   const [claim, setClaim] = useState("");
   const [url, setUrl] = useState("");
+  const [extraUrls, setExtraUrls] = useState<string[]>([]);
+  const [showMultiSource, setShowMultiSource] = useState(false);
   const [category, setCategory] = useState<Category>("Other");
   const [touched, setTouched] = useState(false);
 
@@ -66,8 +68,19 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
     claim.length <= MAX_CLAIM_LENGTH;
   const urlValid =
     url === "" || (url.startsWith("https://") && url.length > "https://".length);
-  const formValid = claimValid && urlValid;
-  const mode = url.trim() === "" ? "KNOWLEDGE_BASED" : "SOURCE_VERIFIED";
+  const extraUrlsValid =
+    !showMultiSource ||
+    extraUrls.every(
+      (u) => u === "" || (u.startsWith("https://") && u.length > "https://".length)
+    );
+  const formValid = claimValid && urlValid && extraUrlsValid;
+  const allSourceUrls = showMultiSource ? [url, ...extraUrls].filter((u) => u.trim() !== "") : [];
+  const mode =
+    allSourceUrls.length > 0
+      ? "SOURCE_VERIFIED"
+      : url.trim() === ""
+        ? "KNOWLEDGE_BASED"
+        : "SOURCE_VERIFIED";
 
   const { data: recent } = useQuery({
     queryKey: ["recent-claim-autocomplete"],
@@ -88,14 +101,14 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
     event.preventDefault();
     setTouched(true);
     if (!formValid || isLoading) return;
-    onSubmit(claim.trim(), url.trim(), category);
+    onSubmit(claim.trim(), url.trim(), category, allSourceUrls);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       if (formValid && !isLoading) {
-        onSubmit(claim.trim(), url.trim(), category);
+        onSubmit(claim.trim(), url.trim(), category, allSourceUrls);
       }
     }
   }
@@ -252,6 +265,76 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             ? "The contract fetches this URL live and cross-references corroborating sources."
             : "No source: the AI evaluates from its own knowledge. Confidence is capped and the verdict is labeled knowledge-based."}
         </p>
+
+        {/* Multi-source toggle */}
+        {url.trim() !== "" && (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => {
+                setShowMultiSource((v) => !v);
+                if (!showMultiSource && extraUrls.length === 0) {
+                  setExtraUrls([""]);
+                }
+              }}
+              className="font-mono text-[0.6rem] text-signal transition-colors hover:underline"
+            >
+              {showMultiSource ? "− Remove extra sources" : "+ Add more sources for cross-reference"}
+            </button>
+          </div>
+        )}
+
+        {/* Extra URL inputs */}
+        <AnimatePresence>
+          {showMultiSource && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-3 space-y-2 overflow-hidden"
+            >
+              <p className="font-mono text-[0.6rem] text-ink-ghost">
+                Add up to 3 additional sources to cross-reference against the primary.
+              </p>
+              {extraUrls.map((eu, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Link2 size={12} className="shrink-0 text-ink-ghost" />
+                  <input
+                    type="url"
+                    value={eu}
+                    onChange={(e) => {
+                      const updated = [...extraUrls];
+                      updated[i] = e.target.value;
+                      setExtraUrls(updated);
+                    }}
+                    placeholder={`Additional source ${i + 1} — https://...`}
+                    className="!py-1.5 !text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExtraUrls((prev) => prev.filter((_, j) => j !== i));
+                      if (extraUrls.length <= 1) setShowMultiSource(false);
+                    }}
+                    className="shrink-0 text-ink-ghost transition-colors hover:text-danger"
+                    aria-label="Remove source"
+                  >
+                    <XCircle size={14} />
+                  </button>
+                </div>
+              ))}
+              {extraUrls.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => setExtraUrls((prev) => [...prev, ""])}
+                  className="font-mono text-[0.6rem] text-ink-ghost transition-colors hover:text-signal"
+                >
+                  + Add another source
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="mb-6">
