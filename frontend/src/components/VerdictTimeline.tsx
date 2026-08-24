@@ -18,10 +18,20 @@ function formatTime(ts: number): string {
 export default function VerdictTimeline({ record }: VerdictTimelineProps) {
   const reduceMotion = useReducedMotion();
 
+  const sourceHost = (() => {
+    try {
+      return record.source_url
+        ? new URL(record.source_url).hostname.replace(/^www\./, "")
+        : "Knowledge-based (no source)";
+    } catch {
+      return record.source_url || "Unknown source";
+    }
+  })();
+
   const steps = [
     {
       label: "Primary source",
-      detail: new URL(record.source_url).hostname.replace(/^www\./, ""),
+      detail: sourceHost,
       icon: Globe,
     },
     {
