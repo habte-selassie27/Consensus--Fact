@@ -247,12 +247,17 @@ class TestRequiredSpec:
         record = fc.get_check(submit(fc))
         assert record["verdict"] == "MISLEADING"
 
-    def test_source_unreachable(self, fc, llm, web):
+    def test_source_unreachable_falls_back_to_knowledge(self, fc, llm, web):
+        """Unreachable source no longer dead-ends at UNVERIFIABLE 0%:
+        the pipeline falls back to a knowledge-based verdict with the
+        source marked unreachable."""
         web.side_effect = RuntimeError("404 Not Found")
+        set_verdict(llm, "FALSE", 60, "Known to be false from general knowledge.")
         record = fc.get_check(submit(fc))
-        assert record["verdict"] == "UNVERIFIABLE"
-        assert record["confidence"] == 0
-        assert record["explanation"] == "Primary source could not be fetched."
+        assert record["verdict"] == "FALSE"
+        assert record["verification_mode"] == "KNOWLEDGE_BASED"
+        assert record["source_status"] == "EMPTY"  # 404 classified as empty
+        assert record["explanation"] != ""
 
     def test_claim_too_long(self, fc):
         claim = "x" * 501
@@ -397,6 +402,7 @@ class TestCoverage:
         assert stats == {
             "total_checks": 0,
             "verdicts_by_type": {},
+            "modes": {"SOURCE_VERIFIED": 0, "KNOWLEDGE_BASED": 0},
             "most_recent_timestamp": 0,
         }
 
@@ -435,3 +441,101 @@ class TestCoverage:
         llm.side_effect = side_effect
         record = fc.get_check(submit(fc))
         assert record["confidence"] == 77
+
+
+# ---------------------------------------------------------------------------
+# Phase 0+1 — knowledge-based mode and verification fields
+# ---------------------------------------------------------------------------
+
+
+def knowledge_verdict_json(verdict, confidence=70, explanation="From general knowledge."):
+    return json.dumps({"verdict": verdict, "confidence": confidence, "explanation": explanation})
+
+
+def submit_knowledge(fc, claim="The Earth orbits the Sun."):
+    check_id = fc.submit_claim(claim=claim, source_url="")
+    advance_block()
+    return check_id
+
+
+def submit_knowledge_url_empty(fc, claim="The Earth orbits the Sun."):
+    check_id = fc.submit_claim(claim=claim, source_url="  ")
+    advance_block()
+    return check_id
+
+
+class TestKnowledgeBasedMode:
+    def test_empty_url_triggers_knowledge_mode(self, fc, llm):
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("TRUE", 80, "Well-known fact.")
+        check_id = submit_knowledge(fc)
+        record = fc.get_check(check_id)
+        assert record["verification_mode"] == "KNOWLEDGE_BASED"
+        assert record["source_status"] == "NOT_PROVIDED"
+        assert record["source_url"] == ""
+        assert record["sources_checked"] == []
+
+    def test_whitespace_url_treated_as_empty(self, fc, llm):
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("TRUE", 80, "Well-known fact.")
+        check_id = submit_knowledge_url_empty(fc)
+        record = fc.get_check(check_id)
+        assert record["verification_mode"] == "KNOWLEDGE_BASED"
+        assert record["source_status"] == "NOT_PROVIDED"
+
+    def test_knowledge_mode_verdict_stored(self, fc, llm):
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("FALSE", 65, "This is false.")
+        check_id = submit_knowledge(fc, claim="The Moon is made of cheese.")
+        record = fc.get_check(check_id)
+        assert record["verdict"] == "FALSE"
+        assert record["confidence"] == 65
+        assert record["explanation"] == "This is false."
+
+    def test_knowledge_mode_with_fallback_verdict(self, fc, llm):
+        """When LLM returns a bad verdict in knowledge mode, falls back to UNVERIFIABLE."""
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("GARBAGE", 50, "Hmm.")
+        check_id = submit_knowledge(fc)
+        record = fc.get_check(check_id)
+        assert record["verdict"] == "UNVERIFIABLE"
+
+    def test_knowledge_mode_counts_in_stats(self, fc, llm):
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("TRUE", 80, "ok")
+        submit_knowledge(fc)
+        submit_knowledge(fc, claim="Another fact.")
+        stats = fc.get_stats()
+        assert stats["modes"]["KNOWLEDGE_BASED"] == 2
+        assert stats["modes"]["SOURCE_VERIFIED"] == 0
+
+    def test_knowledge_mode_empty_explanation_fallback(self, fc, llm):
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("TRUE", 70, "")
+        check_id = submit_knowledge(fc)
+        record = fc.get_check(check_id)
+        assert len(record["explanation"]) > 0
+
+    def test_source_mode_still_works(self, fc, llm):
+        check_id = submit(fc, claim="Some claim.", url=PRIMARY_URL)
+        record = fc.get_check(check_id)
+        assert record["verification_mode"] == "SOURCE_VERIFIED"
+        assert record["source_status"] == "FETCHED"
+        assert record["source_url"] == PRIMARY_URL
+
+    def test_mixed_modes_tallied_separately(self, fc, llm):
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("TRUE", 70, "ok")
+        submit_knowledge(fc)
+        llm.side_effect = lambda prompt, **kw: verdict_json("TRUE", 95, "Sources confirm.")
+        submit(fc)
+        stats = fc.get_stats()
+        assert stats["modes"]["KNOWLEDGE_BASED"] == 1
+        assert stats["modes"]["SOURCE_VERIFIED"] == 1
+        assert stats["verdicts_by_type"]["TRUE"] == 2
+
+    def test_knowledge_explanation_contains_fallback_notice(self, fc, llm, web):
+        """When a source is provided but unreachable, knowledge fallback
+        explanation should note that no live evidence was used."""
+        web.side_effect = RuntimeError("connection refused")
+        llm.side_effect = lambda prompt, **kw: knowledge_verdict_json("UNVERIFIABLE", 30, "Insufficient info.")
+        check_id = submit(fc)
+        record = fc.get_check(check_id)
+        assert record["verification_mode"] == "KNOWLEDGE_BASED"
+        assert record["source_status"] == "ERROR"
+        # source is still recorded
+        assert record["source_url"] == PRIMARY_URL
+        assert record["sources_checked"] == [PRIMARY_URL]
