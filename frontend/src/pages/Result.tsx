@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
-import { Copy, ExternalLink, ArrowLeft } from "lucide-react";
+import { Copy, ExternalLink, ArrowLeft, Info } from "lucide-react";
 import CategoryBadge from "@/components/CategoryBadge";
 import ChallengePanel from "@/components/ChallengePanel";
 import ConfidenceRing from "@/components/ConfidenceRing";
@@ -12,10 +12,12 @@ import ShareCardActions from "@/components/ShareCardActions";
 import SourcePanel from "@/components/SourcePanel";
 import VerdictCard from "@/components/VerdictCard";
 import VerdictTimeline from "@/components/VerdictTimeline";
+import VerificationMethod from "@/components/VerificationMethod";
 import { ClaimNotFoundState } from "@/components/States";
 import { SkeletonCard } from "@/components/Skeleton";
 import { getStoredCategory } from "@/lib/categories";
 import { getCheck } from "@/lib/genlayer";
+import { SOURCE_STATUS_LABELS } from "@/lib/types";
 
 const VERDICT_COLORS: Record<string, string> = {
   TRUE: "#00E5A0",
@@ -75,11 +77,14 @@ export default function Result() {
     );
   }
 
-  const explanationLines = record.explanation
+  const explanationLines = (record.explanation || "No explanation was recorded for this verdict.")
     .split(/(?<=[.!?])\s+/)
     .filter((line) => line.length > 0);
 
   const verdictColor = VERDICT_COLORS[record.verdict] ?? "#6B7280";
+  const isKnowledgeBased = record.verification_mode === "KNOWLEDGE_BASED";
+  const showSourceNotice =
+    isKnowledgeBased || record.source_status !== "FETCHED";
 
   return (
     <motion.div
@@ -100,10 +105,32 @@ export default function Result() {
         <p className="max-w-[600px] font-display text-lg text-ink-dim" style={{ lineHeight: 1.6 }}>
           &ldquo;{record.claim}&rdquo;
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <CategoryBadge category={getStoredCategory(record.id, record.claim) ?? "Other"} />
+          <VerificationMethod
+            mode={record.verification_mode}
+            sourceStatus={record.source_status}
+            sourceUrl={record.source_url}
+          />
         </div>
       </motion.div>
+
+      {/* Knowledge-based notice */}
+      {showSourceNotice && (
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: delay(0.8), duration: 0.3 }}
+          className="mt-6 flex items-start gap-3 rounded-lg border border-pending/30 bg-pending-dim px-4 py-3"
+        >
+          <Info size={15} className="mt-0.5 shrink-0 text-pending" />
+          <p className="text-xs leading-relaxed text-ink-dim">
+            {record.source_status === "NOT_PROVIDED"
+              ? "This verdict is knowledge-based: no source URL was provided, so the AI evaluated the claim from its own knowledge. Confidence is capped and should be read accordingly."
+              : `The provided source could not be used (${SOURCE_STATUS_LABELS[record.source_status]}). The verdict below is a knowledge-based assessment made without live web evidence.`}
+          </p>
+        </motion.div>
+      )}
 
       {/* Verdict row */}
       <section
@@ -152,8 +179,22 @@ export default function Result() {
         transition={{ delay: delay(2500), duration: 0.35, ease: "easeOut" }}
         className="mt-8"
       >
-        <h2 className="label mb-3">Sources cross-referenced</h2>
-        <SourcePanel sources={[record.source_url, ...record.sources_checked.filter((s) => s !== record.source_url)]} />
+        <h2 className="label mb-3">
+          {isKnowledgeBased ? "Evidence" : "Sources cross-referenced"}
+        </h2>
+        {isKnowledgeBased ? (
+          <div className="rounded-lg border border-line bg-surface-2 px-4 py-5 text-center">
+            <p className="font-mono text-xs text-ink-dim">
+              No external sources were fetched for this check.
+            </p>
+            <p className="mt-1 font-mono text-[0.65rem] text-ink-ghost">
+              The verdict is based solely on the AI model's knowledge. Submit with a
+              source URL for a source-verified verdict.
+            </p>
+          </div>
+        ) : (
+          <SourcePanel sources={[record.source_url, ...record.sources_checked.filter((s) => s !== record.source_url)]} />
+        )}
       </motion.section>
 
       <VerdictTimeline record={record} />
@@ -186,6 +227,12 @@ export default function Result() {
             <p className="font-mono text-[0.6rem] uppercase tracking-wider text-ink-ghost">Submitter</p>
             <p className="mt-1 font-mono text-xs text-ink">
               {record.submitter.slice(0, 6)}...{record.submitter.slice(-4)}
+            </p>
+          </div>
+          <div>
+            <p className="font-mono text-[0.6rem] uppercase tracking-wider text-ink-ghost">Method</p>
+            <p className="mt-1 font-mono text-xs text-ink">
+              {isKnowledgeBased ? "Knowledge-based" : "Source-verified"}
             </p>
           </div>
           <div>
