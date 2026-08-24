@@ -9,6 +9,8 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle2,
+  XCircle,
+  HelpCircle,
 } from "lucide-react";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import SourceReliabilityDetail from "@/components/SourceReliabilityDetail";
@@ -138,28 +140,12 @@ export default function Stats() {
         </motion.div>
       </section>
 
-      {/* Big number cards */}
-      <section className="grid gap-4 sm:grid-cols-4" aria-label="Key stats">
+      {/* Big number cards — 4 verdict types */}
+      <section className="grid gap-4 sm:grid-cols-4" aria-label="Verdict breakdown">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: delay(0.1), duration: 0.45 }}
-          className="card"
-        >
-          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-signal/10 text-signal">
-            <Scale size={17} />
-          </div>
-          <AnimatedCounter
-            value={total}
-            className="font-display text-4xl font-bold tracking-tight"
-          />
-          <p className="label mt-1">Verifications</p>
-        </motion.div>
-
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: delay(0.16), duration: 0.45 }}
           className="card"
         >
           <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-signal/10 text-signal">
@@ -169,7 +155,23 @@ export default function Stats() {
             value={trueCount}
             className="font-display text-4xl font-bold tracking-tight text-signal"
           />
-          <p className="label mt-1">TRUE claims</p>
+          <p className="label mt-1">TRUE</p>
+        </motion.div>
+
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: delay(0.16), duration: 0.45 }}
+          className="card"
+        >
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-danger/10 text-danger">
+            <XCircle size={17} />
+          </div>
+          <AnimatedCounter
+            value={falseCount}
+            className="font-display text-4xl font-bold tracking-tight text-danger"
+          />
+          <p className="label mt-1">FALSE</p>
         </motion.div>
 
         <motion.div
@@ -178,14 +180,14 @@ export default function Stats() {
           transition={{ delay: delay(0.22), duration: 0.45 }}
           className="card"
         >
-          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-danger/10 text-danger">
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-warn/10 text-warn">
             <AlertTriangle size={17} />
           </div>
           <AnimatedCounter
-            value={falseCount + misleadingCount}
-            className="font-display text-4xl font-bold tracking-tight text-danger"
+            value={misleadingCount}
+            className="font-display text-4xl font-bold tracking-tight text-warn"
           />
-          <p className="label mt-1">FALSE / MISLEADING</p>
+          <p className="label mt-1">MISLEADING</p>
         </motion.div>
 
         <motion.div
@@ -194,14 +196,14 @@ export default function Stats() {
           transition={{ delay: delay(0.28), duration: 0.45 }}
           className="card"
         >
-          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-pending/10 text-pending">
-            <Brain size={17} />
+          <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-mute/20 text-ink-ghost">
+            <HelpCircle size={17} />
           </div>
           <AnimatedCounter
-            value={knowledgeBased}
+            value={unverifiableCount}
             className="font-display text-4xl font-bold tracking-tight"
           />
-          <p className="label mt-1">Knowledge-based</p>
+          <p className="label mt-1">UNVERIFIABLE</p>
         </motion.div>
       </section>
 
