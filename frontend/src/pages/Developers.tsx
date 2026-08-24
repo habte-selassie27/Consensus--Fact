@@ -336,12 +336,12 @@ export default function Developers() {
             ].map((fn) => (
               <div
                 key={fn.name}
-                className="rounded-lg bg-surface-2 px-3 py-2"
+                className="rounded-lg border border-line bg-surface-2 px-3 py-2"
               >
                 <p className="font-mono text-[0.65rem] font-semibold text-signal">
                   {fn.name}
                 </p>
-                <p className="mt-0.5 font-mono text-[0.6rem] text-ink-ghost">
+                <p className="mt-0.5 font-mono text-[0.6rem] text-ink-dim">
                   {fn.desc}
                 </p>
               </div>
