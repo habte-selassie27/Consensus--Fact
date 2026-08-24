@@ -25,6 +25,15 @@ interface ClaimFormProps {
 const MIN_CLAIM_LENGTH = 10;
 const MAX_CLAIM_LENGTH = 500;
 
+const SUGGESTED_SOURCES: { label: string; url: string; tier: "gov" | "encyclopedia" | "news" }[] = [
+  { label: "Wikipedia", url: "https://en.wikipedia.org", tier: "encyclopedia" },
+  { label: "NASA", url: "https://www.nasa.gov", tier: "gov" },
+  { label: "Reuters", url: "https://www.reuters.com", tier: "news" },
+  { label: "BBC", url: "https://www.bbc.com", tier: "news" },
+  { label: "AP News", url: "https://apnews.com", tier: "news" },
+  { label: "WHO", url: "https://www.who.int", tier: "gov" },
+];
+
 const CATEGORY_OPTIONS = CATEGORIES.map((c) => {
   const icons: Record<string, string> = {
     Science: "🔬",
@@ -217,6 +226,26 @@ export default function ClaimForm({ onSubmit, isLoading }: ClaimFormProps) {
             Must start with https:// — or leave empty to skip
           </p>
         )}
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[0.6rem] text-ink-ghost">Quick add:</span>
+          {SUGGESTED_SOURCES.map((src) => (
+            <button
+              key={src.label}
+              type="button"
+              onClick={() => {
+                setUrl(src.url);
+                setTouched(true);
+              }}
+              className={`rounded-full border px-2.5 py-0.5 font-mono text-[0.6rem] transition-colors ${
+                url === src.url
+                  ? "border-signal bg-signal-dim text-signal"
+                  : "border-line text-ink-dim hover:border-signal/40 hover:text-signal"
+              }`}
+            >
+              {src.label}
+            </button>
+          ))}
+        </div>
         <p className="mt-2 text-xs leading-relaxed text-ink-ghost">
           {mode === "SOURCE_VERIFIED"
             ? "The contract fetches this URL live and cross-references corroborating sources."
