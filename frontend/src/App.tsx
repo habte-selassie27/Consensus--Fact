@@ -9,6 +9,8 @@ import Result from "./pages/Result";
 import Stats from "./pages/Stats";
 import Leaderboard from "./pages/Leaderboard";
 import Embed from "./pages/Embed";
+import Developers from "./pages/Developers";
+import Governance from "./pages/Governance";
 
 function NotFound() {
   return (
@@ -48,6 +50,8 @@ export default function App() {
               <Route path="/stats" element={<Stats />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/embed/:id" element={<Embed />} />
+              <Route path="/developers" element={<Developers />} />
+              <Route path="/governance" element={<Governance />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

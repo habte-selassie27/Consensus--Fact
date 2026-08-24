@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { to: "/", label: "Home" },
   { to: "/stats", label: "Stats" },
   { to: "/history", label: "History" },
+  { to: "/developers", label: "Developers" },
 ] as const;
 
 export default function Navbar() {
