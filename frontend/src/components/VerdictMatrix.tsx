@@ -130,7 +130,7 @@ export default function VerdictMatrix({ record }: VerdictMatrixProps) {
       aria-label="Claim analysis"
       initial={reduceMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay(1.4), duration: 0.45 }}
+      transition={{ delay: delay(0.4), duration: 0.45 }}
       className="rounded-xl border border-line bg-surface p-6 shadow-card"
     >
       <div className="mb-4 flex items-center gap-2">
@@ -161,8 +161,8 @@ export default function VerdictMatrix({ record }: VerdictMatrixProps) {
                 initial={reduceMotion ? false : { opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{
-                  delay: delay(1600 + i * 80),
-                  duration: 0.25,
+                  delay: delay(300 + i * 60),
+                  duration: 0.2,
                 }}
                 className="transition-colors hover:bg-line-dim/30"
               >

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, ChevronRight } from "lucide-react";
 import CategoryBadge from "@/components/CategoryBadge";
 import ChallengePanel from "@/components/ChallengePanel";
 import ConfidenceRing from "@/components/ConfidenceRing";
@@ -25,6 +25,14 @@ import { getStoredCategory } from "@/lib/categories";
 import { getCheck } from "@/lib/genlayer";
 import { SOURCE_STATUS_LABELS } from "@/lib/types";
 import { verificationId } from "@/lib/verification";
+
+const NAV_ITEMS = [
+  { id: "evidence", label: "Evidence" },
+  { id: "consensus", label: "Consensus" },
+  { id: "analysis", label: "Analysis" },
+  { id: "timeline", label: "Timeline" },
+  { id: "proof", label: "Onchain Proof" },
+];
 
 const VERDICT_COLORS: Record<string, string> = {
   TRUE: "#00E5A0",
@@ -123,6 +131,23 @@ export default function Result() {
         </motion.div>
       )}
 
+      {/* Sticky section nav */}
+      <nav
+        className="sticky top-14 z-30 -mx-5 mt-4 flex gap-1 overflow-x-auto border-b border-line bg-void/80 px-5 py-2 backdrop-blur-md"
+        aria-label="Result sections"
+      >
+        {NAV_ITEMS.map((item) => (
+          <a
+            key={item.id}
+            href={`#${item.id}`}
+            className="flex shrink-0 items-center gap-1 rounded-full border border-line px-3 py-1 font-mono text-[0.6rem] tracking-wide text-ink-dim transition-colors hover:border-signal/40 hover:text-signal"
+          >
+            {item.label}
+            <ChevronRight size={10} />
+          </a>
+        ))}
+      </nav>
+
       {/* VERDICT HERO */}
       <motion.section
         aria-label="Verdict"
@@ -160,7 +185,7 @@ export default function Result() {
       </motion.section>
 
       {/* EVIDENCE */}
-      <div className="mt-8">
+      <div id="evidence" className="mt-8 scroll-mt-28">
         <EvidencePanel record={record} />
       </div>
 
@@ -175,17 +200,17 @@ export default function Result() {
       </div>
 
       {/* CONSENSUS */}
-      <div className="mt-8">
+      <div id="consensus" className="mt-8 scroll-mt-28">
         <ValidatorConsensus record={record} />
       </div>
 
       {/* ANALYSIS MATRIX */}
-      <div className="mt-8">
+      <div id="analysis" className="mt-8 scroll-mt-28">
         <VerdictMatrix record={record} />
       </div>
 
       {/* TIMELINE */}
-      <div className="mt-8">
+      <div id="timeline" className="mt-8 scroll-mt-28">
         <VerdictTimeline record={record} />
       </div>
 
@@ -195,7 +220,7 @@ export default function Result() {
       </div>
 
       {/* ONCHAIN PROOF */}
-      <div className="mt-8">
+      <div id="proof" className="mt-8 scroll-mt-28">
         <OnchainProof record={record} />
       </div>
 

@@ -115,7 +115,7 @@ export default function VerdictTimeline({ record }: VerdictTimelineProps) {
       aria-label="Verification timeline"
       initial={reduceMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay(2.0), duration: 0.45 }}
+      transition={{ delay: delay(0.5), duration: 0.45 }}
       className="rounded-xl border border-line bg-surface p-6 shadow-card"
     >
       <h2 className="mb-5 font-display text-sm font-semibold tracking-wide text-ink">
@@ -132,8 +132,8 @@ export default function VerdictTimeline({ record }: VerdictTimelineProps) {
               initial={reduceMotion ? false : { opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{
-                delay: delay(2200 + i * 120),
-                duration: 0.3,
+                delay: delay(600 + i * 80),
+                duration: 0.25,
               }}
               className="relative flex gap-4"
             >

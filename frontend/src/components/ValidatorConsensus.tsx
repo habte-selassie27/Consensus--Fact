@@ -28,34 +28,34 @@ export default function ValidatorConsensus({ record }: ValidatorConsensusProps) 
         aria-label="Validator consensus"
         initial={reduceMotion ? false : { opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: delay(1.0), duration: 0.45 }}
-        className="rounded-xl border border-line bg-surface p-6 shadow-card"
-      >
-        <div className="mb-4 flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-signal/10">
-            <ShieldCheck size={14} className="text-signal" />
-          </span>
-          <h2 className="font-display text-sm font-semibold tracking-wide text-ink">
-            Decentralized consensus
-          </h2>
-        </div>
+      transition={{ delay: delay(0.3), duration: 0.45 }}
+      className="rounded-xl border border-line bg-surface p-6 shadow-card"
+    >
+      <div className="mb-4 flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-signal/10">
+          <ShieldCheck size={14} className="text-signal" />
+        </span>
+        <h2 className="font-display text-sm font-semibold tracking-wide text-ink">
+          Decentralized consensus
+        </h2>
+      </div>
 
-        <div className="mb-5 text-center">
-          <p className="font-mono text-[0.65rem] uppercase tracking-wider text-ink-ghost">
-            Optimistic Democracy consensus
-          </p>
-        </div>
+      <div className="mb-5 text-center">
+        <p className="font-mono text-[0.65rem] uppercase tracking-wider text-ink-ghost">
+          Optimistic Democracy consensus
+        </p>
+      </div>
 
-        <div className="space-y-2">
-          {entries.map(([addr, vote], i) => (
-            <motion.div
-              key={addr}
-              initial={reduceMotion ? false : { opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{
-                delay: delay(1200 + i * 120),
-                duration: 0.3,
-              }}
+      <div className="space-y-2">
+        {entries.map(([addr, vote], i) => (
+          <motion.div
+            key={addr}
+            initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{
+              delay: delay(400 + i * 80),
+              duration: 0.25,
+            }}
               className="flex items-center gap-3 rounded-lg bg-surface-2 px-4 py-2.5"
             >
               <span className="font-mono text-[0.65rem] text-ink-ghost">
@@ -104,7 +104,7 @@ export default function ValidatorConsensus({ record }: ValidatorConsensusProps) 
       aria-label="Validator consensus"
       initial={reduceMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay(1.0), duration: 0.45 }}
+      transition={{ delay: delay(0.3), duration: 0.45 }}
       className="rounded-xl border border-line bg-surface p-6 shadow-card"
     >
       <div className="mb-4 flex items-center gap-2">
