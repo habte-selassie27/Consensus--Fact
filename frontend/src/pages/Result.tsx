@@ -127,7 +127,9 @@ export default function Result() {
         >
           {record.source_status === "NOT_PROVIDED"
             ? "This verdict is knowledge-based: no source URL was provided, so the AI evaluated the claim from its own knowledge. Confidence is capped."
-            : `The provided source could not be used (${SOURCE_STATUS_LABELS[record.source_status]}). The verdict is a knowledge-based assessment.`}
+            : record.source_status === "FETCHED"
+              ? ""
+              : `The provided source could not be retrieved (${SOURCE_STATUS_LABELS[record.source_status]}). The AI evaluated the claim from its knowledge instead. This is expected when a source is temporarily unavailable.`}
         </motion.div>
       )}
 

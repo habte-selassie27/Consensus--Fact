@@ -23,10 +23,10 @@ const STATUS_CLASS: Record<SourceStatus, string> = {
   FETCHED: "border-signal-border bg-signal-dim text-signal",
   NOT_PROVIDED: "border-pending/30 bg-pending-dim text-pending",
   EMPTY: "border-warn/30 bg-warn/10 text-warn",
-  BLOCKED: "border-danger/30 bg-danger-dim text-danger",
+  BLOCKED: "border-warn/30 bg-warn/10 text-warn",
   TIMEOUT: "border-warn/30 bg-warn/10 text-warn",
-  INVALID: "border-danger/30 bg-danger-dim text-danger",
-  ERROR: "border-danger/30 bg-danger-dim text-danger",
+  INVALID: "border-warn/30 bg-warn/10 text-warn",
+  ERROR: "border-warn/30 bg-warn/10 text-warn",
 };
 
 export default function VerificationMethod({
@@ -45,7 +45,9 @@ export default function VerificationMethod({
     ? "Source-verified"
     : sourceStatus === "NOT_PROVIDED"
       ? "Knowledge-based"
-      : `Knowledge-based · ${SOURCE_STATUS_LABELS[sourceStatus]}`;
+      : sourceStatus === "ERROR" || sourceStatus === "BLOCKED" || sourceStatus === "TIMEOUT"
+        ? "Knowledge-based · Source unreachable"
+        : `Knowledge-based · ${SOURCE_STATUS_LABELS[sourceStatus]}`;
 
   if (compact) {
     return (
